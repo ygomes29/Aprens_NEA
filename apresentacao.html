@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEA — Núcleo de Engenharia de Agentes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F1419;
+  --accent:#2DD4A8;
+  --accent2:#25B08A;
+  --text:#FFFFFF;
+  --gray:#8B9AB0;
+  --card-bg:rgba(255,255,255,0.04);
+  --card-border:rgba(45,212,168,0.2);
+  --radius:16px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text)}
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:1000;transition:width 0.4s ease;box-shadow:0 0 8px var(--accent)}
+#slide-counter{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;color:var(--gray);font-size:13px;font-weight:500;letter-spacing:0.05em}
+#nav-prev,#nav-next{position:fixed;top:50%;transform:translateY(-50%);z-index:1000;background:rgba(45,212,168,0.1);border:1px solid var(--card-border);color:var(--accent);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;backdrop-filter:blur(8px)}
+#nav-prev{left:16px}#nav-next{right:16px}
+#nav-prev:hover,#nav-next:hover{background:rgba(45,212,168,0.2);box-shadow:0 0 16px rgba(45,212,168,0.3)}
+.slide{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;opacity:0;pointer-events:none;transition:opacity 0.5s ease}
+.slide.active{opacity:1;pointer-events:all}
+canvas#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;transition:opacity 0.5s}
+canvas#particles.visible{opacity:1}
+/* ---- Typography ---- */
+.hero-num{font-size:clamp(80px,12vw,160px);font-weight:900;color:var(--accent);line-height:1;letter-spacing:-0.03em}
+.hero-label{font-size:clamp(18px,2.5vw,28px);color:var(--gray);margin-top:12px;text-align:center}
+.section-title{font-size:clamp(28px,4vw,52px);font-weight:800;text-align:center;line-height:1.2}
+.sub{font-size:clamp(14px,1.8vw,20px);color:var(--gray);text-align:center;margin-top:12px}
+.teal{color:var(--accent)}
+/* ---- Cards ---- */
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:28px 32px}
+.card-glow{box-shadow:0 0 30px rgba(45,212,168,0.15)}
+/* ---- Keyframes ---- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(45,212,168,0.4)}50%{transform:scale(1.03);box-shadow:0 0 40px rgba(45,212,168,0.7)}}
+@keyframes pulseDot{0%,100%{transform:scale(1);opacity:0.7}50%{transform:scale(1.6);opacity:1}}
+@keyframes drawLine{from{stroke-dashoffset:500}to{stroke-dashoffset:0}}
+@keyframes barFill{from{width:0}to{width:var(--target-width)}}
+@keyframes barFillV{from{height:0}to{height:var(--target-height)}}
+@keyframes donutFill{from{stroke-dashoffset:var(--dash-total)}to{stroke-dashoffset:var(--dash-offset)}}
+@keyframes stepUp{from{opacity:0;transform:translateY(20px) scaleY(0.5)}to{opacity:1;transform:translateY(0) scaleY(1)}}
+@keyframes wordFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(45,212,168,0.3),0 0 40px rgba(45,212,168,0.1)}50%{box-shadow:0 0 40px rgba(45,212,168,0.6),0 0 80px rgba(45,212,168,0.3)}}
+@keyframes ctaPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(45,212,168,0.5)}50%{transform:scale(1.04);box-shadow:0 0 0 12px rgba(45,212,168,0)}}
+@keyframes notifDrop{from{opacity:0;transform:translateY(-60px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes radialGrow{from{opacity:0;transform:scale(0.3)}to{opacity:1;transform:scale(1)}}
+@keyframes logoGlow{0%{filter:drop-shadow(0 0 0px var(--accent))}100%{filter:drop-shadow(0 0 30px var(--accent))}}
+@keyframes lineFlow{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@keyframes mentorPulse{0%,100%{transform:scale(1);opacity:1;filter:drop-shadow(0 0 10px var(--accent))}50%{transform:scale(1.1);opacity:0.8;filter:drop-shadow(0 0 25px var(--accent))}}
+/* ---- CTA Button ---- */
+.cta-btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#0F1419;font-weight:800;font-size:clamp(16px,2vw,22px);padding:18px 40px;border-radius:50px;border:none;cursor:pointer;animation:ctaPulse 2s infinite;letter-spacing:0.02em;text-decoration:none}
+.cta-btn:hover{background:#25c49b}
+
+/* ===== SLIDE-SPECIFIC STYLES ===== */
+
+/* S1 */
+.s1-logo{position:relative;z-index:2;text-align:center}
+.s1-nea-mark{width:140px;height:140px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:fadeUp 0.8s ease forwards}
+.s1-name{font-size:clamp(22px,3vw,36px);font-weight:700;animation:fadeUp 0.8s 0.3s ease both}
+.s1-full{font-size:clamp(13px,1.5vw,17px);color:var(--gray);margin-top:6px;animation:fadeUp 0.8s 0.5s ease both}
+.s1-tagline{font-size:clamp(16px,2vw,22px);color:var(--gray);margin-top:32px;font-weight:300;animation:fadeUp 0.8s 1.5s ease both}
+.s1-tagline span{color:var(--accent);font-weight:600}
+
+/* S2 */
+.s2-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0F1419 0%,#1a2535 40%,#0d2020 100%);z-index:0}
+.s2-hero{position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(45,212,168,0.08) 0%,transparent 70%);z-index:1}
+.s2-quote{position:relative;z-index:2;text-align:center;padding:0 60px}
+.s2-quote h1{font-size:clamp(32px,5vw,72px);font-weight:900;line-height:1.15;animation:fadeUp 1s 0.3s ease both}
+.s2-silhouette{position:absolute;top:15%;left:50%;transform:translateX(-50%);z-index:1;opacity:0.15}
+
+/* S3 */
+.s3-cards{display:flex;gap:24px;margin-bottom:32px}
+.s3-card{flex:1;text-align:center;padding:36px 24px;opacity:0}
+.s3-card.a1{animation:slideRight 0.6s 0.2s ease forwards}
+.s3-card.a2{animation:fadeUp 0.6s 0.5s ease forwards}
+.s3-card.a3{animation:slideLeft 0.6s 0.8s ease forwards}
+.s3-icon{font-size:48px;margin-bottom:16px}
+.s3-label{font-size:clamp(16px,2vw,22px);font-weight:700}
+.s3-bottom{font-size:clamp(24px,3.5vw,44px);font-weight:900;color:var(--accent);animation:fadeUp 0.6s 1.2s ease both;opacity:0}
+
+/* S4 */
+.s4-text{text-align:center}
+.s4-line1{font-size:clamp(28px,4.5vw,64px);font-weight:700;animation:fadeUp 0.8s 0.3s ease both;opacity:0}
+.s4-line2{font-size:clamp(28px,4.5vw,64px);font-weight:700;animation:fadeUp 0.8s 0.9s ease both;opacity:0;margin-top:8px}
+
+/* S5 */
+.s5-wrap{display:flex;width:100%;height:100%;position:absolute;inset:0}
+.s5-left{flex:1;background:rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;filter:saturate(0.3)}
+.s5-right{flex:1;background:rgba(45,212,168,0.05);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;opacity:0;animation:fadeIn 0.7s 0.8s ease forwards}
+.s5-divider{position:absolute;left:50%;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,transparent,var(--accent),transparent);z-index:2}
+.s5-title{font-size:clamp(18px,2.5vw,28px);font-weight:700;margin-bottom:20px}
+.s5-icon{font-size:72px;margin-bottom:16px}
+.s5-desc{font-size:clamp(13px,1.5vw,18px);color:var(--gray);text-align:center}
+
+/* S6 */
+.s6-wrap{text-align:center}
+.s6-num{font-size:clamp(80px,14vw,180px);font-weight:900;color:var(--accent);line-height:1;letter-spacing:-0.04em}
+.s6-source{font-size:12px;color:rgba(139,154,176,0.5);margin-top:20px}
+
+/* S7 */
+.s7-wrap{width:100%;max-width:700px}
+.s7-bar-wrap{margin-bottom:20px}
+.s7-bar-label{font-size:clamp(14px,1.8vw,18px);font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between}
+.s7-bar-track{height:44px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden}
+.s7-bar-fill{height:100%;border-radius:8px;width:0;display:flex;align-items:center;padding-left:16px;font-weight:700;font-size:clamp(13px,1.5vw,16px);color:#0F1419;transition:none}
+.s7-bar-fill.teal-bar{background:linear-gradient(90deg,var(--accent),var(--accent2));--target-width:80%}
+.s7-bar-fill.red-bar{background:linear-gradient(90deg,#e05555,#c44444);--target-width:46%;color:#fff}
+.s7-saldo{font-size:clamp(20px,3vw,36px);font-weight:800;color:var(--accent);text-align:center;margin:24px 0 8px;opacity:0}
+.s7-sub{font-size:clamp(14px,1.8vw,20px);color:var(--gray);text-align:center;opacity:0}
+
+/* S8 */
+.s8-wrap{display:flex;align-items:center;gap:40px;width:100%;max-width:800px}
+.s8-circle-big{width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;animation:scaleIn 0.6s 0.2s ease both;opacity:0}
+.s8-circle-small{width:110px;height:110px;border-radius:50%;background:rgba(139,154,176,0.2);border:2px solid var(--gray);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;animation:scaleIn 0.6s 0.5s ease both;opacity:0}
+.s8-num{font-size:clamp(22px,3vw,36px);font-weight:900;color:#0F1419;line-height:1}
+.s8-num-gray{font-size:clamp(18px,2.5vw,28px);font-weight:900;color:var(--text);line-height:1}
+.s8-lbl{font-size:11px;font-weight:600;color:#0F1419;text-align:center;margin-top:4px}
+.s8-lbl-gray{font-size:11px;font-weight:600;color:var(--gray);text-align:center;margin-top:4px}
+.s8-gap{flex:1;text-align:center;animation:fadeUp 0.6s 0.8s ease both;opacity:0}
+.s8-gap-num{font-size:clamp(28px,4vw,52px);font-weight:900;color:#e05555}
+.s8-gap-lbl{font-size:clamp(13px,1.5vw,16px);color:var(--gray);margin-top:6px}
+.s8-source{font-size:12px;color:rgba(139,154,176,0.4);margin-top:32px;text-align:center}
+
+/* S9 */
+.s9-wrap{text-align:center}
+.s9-tags{display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+.s9-tag{background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:10px 20px;font-size:clamp(13px,1.5vw,16px);font-weight:600;animation:fadeUp 0.5s ease both;opacity:0}
+.s9-tag:nth-child(1){animation-delay:0.8s}
+.s9-tag:nth-child(2){animation-delay:1.0s}
+.s9-tag:nth-child(3){animation-delay:1.2s}
+
+/* S10 */
+.s10-wrap{position:relative;width:100%;max-width:600px;display:flex;flex-direction:column;align-items:center}
+.s10-map{position:relative;margin:0 auto}
+.s10-map svg{width:300px;height:auto;filter:drop-shadow(0 0 20px rgba(45,212,168,0.3))}
+.s10-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulseDot 2s infinite}
+.s10-stats{display:flex;gap:40px;margin-top:24px}
+.s10-stat{text-align:center}
+.s10-stat-num{font-size:clamp(22px,3vw,36px);font-weight:900;color:var(--accent)}
+.s10-stat-lbl{font-size:13px;color:var(--gray)}
+
+/* S11 */
+.s11-wrap{display:flex;align-items:flex-end;gap:60px;margin-bottom:24px}
+.s11-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.s11-bar{width:120px;background:rgba(255,255,255,0.05);border-radius:12px 12px 0 0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;position:relative}
+.s11-bar-fill{width:100%;background:var(--gray);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#0F1419;height:0;transition:none}
+.s11-bar-fill.teal{background:linear-gradient(180deg,var(--accent),var(--accent2))}
+.s11-bar-year{font-size:16px;color:var(--gray);font-weight:600}
+.s11-arrow{display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:60px}
+.s11-arrow-line{width:2px;height:60px;background:var(--accent)}
+.s11-arrow-head{color:var(--accent);font-size:20px}
+.s11-arrow-lbl{font-size:13px;color:var(--accent);font-weight:600;text-align:center;white-space:nowrap}
+
+/* S12 */
+.s12-cards{display:flex;flex-direction:column;gap:20px;width:100%;max-width:600px}
+.s12-card-top{border-color:rgba(45,212,168,0.5);box-shadow:0 0 30px rgba(45,212,168,0.15);animation:fadeUp 0.6s 0.2s ease both;opacity:0}
+.s12-card-bot{animation:fadeUp 0.6s 0.5s ease both;opacity:0}
+.s12-role{font-size:clamp(14px,1.8vw,18px);color:var(--accent);font-weight:700;margin-bottom:8px}
+.s12-salary{font-size:clamp(24px,3.5vw,44px);font-weight:900}
+.s12-source{font-size:12px;color:rgba(139,154,176,0.4);margin-top:20px;text-align:center}
+
+/* S13 */
+.s13-wrap{display:flex;flex-direction:column;align-items:center;gap:24px}
+.s13-donut-wrap{position:relative;width:200px;height:200px}
+.s13-donut-wrap svg{position:absolute;top:0;left:0}
+.s13-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.s13-pct{font-size:48px;font-weight:900;color:var(--accent)}
+.s13-stats{display:flex;gap:32px}
+.s13-stat{text-align:center}
+.s13-stat-num{font-size:clamp(20px,2.5vw,32px);font-weight:900;color:var(--accent)}
+.s13-stat-lbl{font-size:13px;color:var(--gray)}
+
+/* S14 */
+.s14-cards{display:flex;gap:32px}
+.s14-card{flex:1;text-align:center;animation:fadeUp 0.6s ease both;opacity:0}
+.s14-card:nth-child(1){animation-delay:0.2s}
+.s14-card:nth-child(2){animation-delay:0.5s}
+.s14-card-icon{font-size:40px;margin-bottom:16px}
+.s14-pct{font-size:clamp(48px,7vw,80px);font-weight:900;color:var(--accent);line-height:1}
+.s14-lbl{font-size:clamp(14px,1.8vw,18px);color:var(--gray);margin-top:8px}
+
+/* S15 */
+.s15-wrap{display:flex;gap:80px;align-items:flex-start;width:100%;max-width:900px}
+.s15-path{flex:1;display:flex;flex-direction:column;align-items:center;gap:16px}
+.s15-path-title{font-size:clamp(13px,1.5vw,16px);color:var(--gray);font-weight:600;margin-bottom:4px;text-align:center}
+.s15-node{width:56px;height:56px;border-radius:50%;background:var(--card-bg);border:2px solid var(--card-border);display:flex;align-items:center;justify-content:center;font-size:24px}
+.s15-node.nea{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-weight:900;color:#0F1419;font-size:14px}
+.s15-node.dest{background:rgba(45,212,168,0.15);border-color:var(--accent)}
+.s15-arrow-v{width:2px;height:24px;background:var(--card-border)}
+.s15-path-desc{font-size:clamp(12px,1.4vw,15px);color:var(--gray);text-align:center;max-width:160px}
+
+/* ---- Lucide Icons ---- */
+i[data-lucide] { display:inline-flex; align-items:center; justify-content:center; }
+i[data-lucide] svg { stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+.icon-sm i[data-lucide] svg, .icon-sm { width:20px; height:20px; }
+.icon-md i[data-lucide] svg, .icon-md { width:32px; height:32px; }
+.icon-lg i[data-lucide] svg, .icon-lg { width:48px; height:48px; }
+.icon-xl i[data-lucide] svg, .icon-xl { width:64px; height:64px; }
+.icon-2xl i[data-lucide] svg, .icon-2xl { width:80px; height:80px; }
+
+
+/* ---- Lucide Icons ---- */
+i[data-lucide]{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
+i[data-lucide] svg{stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;width:100%;height:100%}
+
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div id="progress-bar"></div>
+<div id="slide-counter">1 / 61</div>
+<button id="nav-prev" onclick="changeSlide(-1)">&#8592;</button>
+<button id="nav-next" onclick="changeSlide(1)">&#8594;</button>
+
+<!-- ============================================================ SLIDE 1 -->
+<div class="slide" id="slide-1">
+  <div class="s1-logo">
+    <div class="s1-nea-mark" style="background:none;border:none;width:140px;height:140px"><img src="Public/Fotos/logo%20nea.png" style="border-radius:16px;width:100px;height:100px;object-fit:contain;" alt="NEA"></div>
+    <div class="s1-name">Núcleo de Engenharia de Agentes</div>
+    <div class="s1-full">Formação em Inteligência Artificial</div>
+    <div class="s1-tagline">Seu futuro em IA começa <span>aqui.</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 2 -->
+<div class="slide" id="slide-2">
+  <div class="s2-bg"></div>
+  <div class="s2-hero"></div>
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:1">
+    <svg width="320" height="320" viewBox="0 0 320 320" fill="none" style="opacity:0.06">
+      <circle cx="160" cy="120" r="60" fill="#2DD4A8"/>
+      <rect x="80" y="180" width="160" height="140" rx="20" fill="#2DD4A8"/>
+    </svg>
+  </div>
+  <div class="s2-quote">
+    <h1>"40 minutos<br>pelo futuro <span class="teal">dele</span>."</h1>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 3 -->
+<div class="slide" id="slide-3">
+  <div class="s3-cards">
+    <div class="card s3-card a1">
+      <div class="s3-icon"><i data-lucide="rocket" style="width:48px;height:48px"></i></div>
+      <div class="s3-label">Profissão em IA</div>
+    </div>
+    <div class="card s3-card a2">
+      <div class="s3-icon"><i data-lucide="globe" style="width:48px;height:48px"></i></div>
+      <div class="s3-label">Inglês profissional</div>
+    </div>
+    <div class="card s3-card a3">
+      <div class="s3-icon"><i data-lucide="briefcase" style="width:48px;height:48px"></i></div>
+      <div class="s3-label">Estágio remunerado</div>
+    </div>
+  </div>
+  <div class="s3-bottom">Em <span class="teal">12 meses.</span></div>
+</div>
+
+<!-- ============================================================ SLIDE 4 -->
+<div class="slide" id="slide-4">
+  <div class="s4-text">
+    <div class="s4-line1">A decisão é sua.</div>
+    <div class="s4-line2">Mas o futuro é <span class="teal">dele.</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 5 -->
+<div class="slide" id="slide-5" style="padding:0">
+  <div class="s5-wrap">
+    <div class="s5-left">
+      <div class="s5-icon"><i data-lucide="graduation-cap" style="width:72px;height:72px"></i></div>
+      <div class="s5-title">O caminho de antes</div>
+      <div class="s5-desc" style="color:rgba(139,154,176,0.6)">Formação longa.<br>Mercado incerto.<br>Retorno demorado.</div>
+    </div>
+    <div class="s5-divider"></div>
+    <div class="s5-right">
+      <div class="s5-icon"><i data-lucide="bot" style="width:72px;height:72px"></i></div>
+      <div class="s5-title" style="color:var(--accent)">A nova realidade</div>
+      <div class="s5-desc">Habilidades práticas.<br>Demanda crescente.<br>Empregabilidade real.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 6 -->
+<div class="slide" id="slide-6">
+  <div class="s6-wrap">
+    <div class="s6-num" id="counter-6">+0 mi</div>
+    <div class="hero-label">novos postos de trabalho até 2030</div>
+    <div style="margin-top:8px;font-size:clamp(12px,1.4vw,15px);color:var(--gray)">Fórum Econômico Mundial — Future of Jobs 2025</div>
+    <div class="s6-source">Fonte: World Economic Forum</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 7 -->
+<div class="slide" id="slide-7">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">O saldo da IA no mercado</div>
+  <div class="s7-wrap">
+    <div class="s7-bar-wrap">
+      <div class="s7-bar-label"><span style="color:var(--accent)">+170 mi criados</span></div>
+      <div class="s7-bar-track">
+        <div class="s7-bar-fill teal-bar" id="bar7a">+170 mi</div>
+      </div>
+    </div>
+    <div class="s7-bar-wrap">
+      <div class="s7-bar-label"><span style="color:#e05555">-92 mi eliminados</span></div>
+      <div class="s7-bar-track">
+        <div class="s7-bar-fill red-bar" id="bar7b">-92 mi</div>
+      </div>
+    </div>
+    <div class="s7-saldo" id="s7saldo">+78 mi de saldo líquido</div>
+    <div class="s7-sub" id="s7sub">Só pra quem estiver pronto.</div>
+    <div style="font-size:12px;color:rgba(139,154,176,0.4);text-align:center;margin-top:12px">Fonte: World Economic Forum</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 8 -->
+<div class="slide" id="slide-8">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">O gap de talentos no Brasil</div>
+  <div class="s8-wrap">
+    <div class="s8-circle-big">
+      <div class="s8-num">159 mil</div>
+      <div class="s8-lbl">demanda anual</div>
+    </div>
+    <div class="s8-gap">
+      <div class="s8-gap-num">530 mil<br>vagas sem dono</div>
+      <div class="s8-gap-lbl">gap acumulado</div>
+    </div>
+    <div class="s8-circle-small">
+      <div class="s8-num-gray">53 mil</div>
+      <div class="s8-lbl-gray">formados/ano</div>
+    </div>
+  </div>
+  <div class="s8-source">Fonte: Brasscom</div>
+</div>
+
+<!-- ============================================================ SLIDE 9 -->
+<div class="slide" id="slide-9">
+  <div class="s9-wrap">
+    <div class="hero-label" style="margin-bottom:8px">Crescimento de vagas com IA</div>
+    <div class="hero-num" id="counter-9">+0%</div>
+    <div style="font-size:clamp(14px,1.8vw,20px);color:var(--gray);margin-top:8px">em anúncios de vagas em 12 meses</div>
+    <div class="s9-tags">
+      <div class="s9-tag"><i data-lucide="bot" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>Técnico em IA</div>
+      <div class="s9-tag"><i data-lucide="settings-2" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>Operador de agentes</div>
+      <div class="s9-tag"><i data-lucide="laptop" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>Desenvolvedor IA</div>
+    </div>
+    <div style="font-size:12px;color:rgba(139,154,176,0.4);margin-top:20px">Fonte: Gupy</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 10 -->
+<div class="slide" id="slide-10">
+  <div class="section-title" style="margin-bottom:32px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">Brasil: epicentro da demanda</div>
+  <div class="s10-wrap">
+    <div class="s10-map">
+      <svg viewBox="0 0 400 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M180 20 L220 18 L260 30 L290 50 L310 80 L320 110 L315 140 L330 160 L340 190 L330 220 L310 250 L290 280 L270 310 L250 340 L230 360 L210 370 L200 380 L190 370 L170 350 L150 320 L140 290 L130 260 L120 230 L110 200 L100 170 L105 140 L100 110 L110 80 L130 55 L155 35 Z" fill="none" stroke="#2DD4A8" stroke-width="2" opacity="0.7"/>
+        <path d="M120 230 L100 250 L80 260 L70 280 L85 290 L100 285 L115 270 L125 255 Z" fill="none" stroke="#2DD4A8" stroke-width="1.5" opacity="0.5"/>
+      </svg>
+      <div class="s10-dot" style="top:30%;left:45%;animation-delay:0s"></div>
+      <div class="s10-dot" style="top:50%;left:55%;animation-delay:0.4s"></div>
+      <div class="s10-dot" style="top:40%;left:35%;animation-delay:0.8s"></div>
+      <div class="s10-dot" style="top:60%;left:48%;animation-delay:1.2s"></div>
+      <div class="s10-dot" style="top:70%;left:40%;animation-delay:0.6s"></div>
+      <div class="s10-dot" style="top:25%;left:60%;animation-delay:1s"></div>
+    </div>
+    <div class="s10-stats">
+      <div class="s10-stat">
+        <div class="s10-stat-num">+65%</div>
+        <div class="s10-stat-lbl">vagas exigindo IA</div>
+      </div>
+      <div class="s10-stat">
+        <div class="s10-stat-num">+2 mil</div>
+        <div class="s10-stat-lbl">posições abertas</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(139,154,176,0.4);margin-top:12px">Fonte: Infojobs</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 11 -->
+<div class="slide" id="slide-11">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Crescimento salarial na área de IA</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+    <div class="s11-wrap">
+      <div class="s11-bar-wrap">
+        <div class="s11-bar" style="height:200px">
+          <div class="s11-bar-fill" id="bar11a" style="--target-height:100px;background:var(--gray)">+25%</div>
+        </div>
+        <div class="s11-bar-year">2024</div>
+      </div>
+      <div class="s11-arrow">
+        <div class="s11-arrow-lbl">dobrou<br>em 1 ano</div>
+        <div class="s11-arrow-line"></div>
+        <div class="s11-arrow-head">&#8594;</div>
+      </div>
+      <div class="s11-bar-wrap">
+        <div class="s11-bar" style="height:200px">
+          <div class="s11-bar-fill teal" id="bar11b" style="--target-height:180px">+56%</div>
+        </div>
+        <div class="s11-bar-year" style="color:var(--accent)">2025</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(139,154,176,0.4)">Fonte: PwC</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 12 -->
+<div class="slide" id="slide-12">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Faixas salariais — Profissionais de IA</div>
+  <div class="s12-cards">
+    <div class="card s12-card-top">
+      <div class="s12-role"><i data-lucide="sparkles" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>Especialista / Sênior</div>
+      <div class="s12-salary">R$ 15.000 — R$ 32.000<span style="font-size:18px;color:var(--gray)">/mês</span></div>
+    </div>
+    <div class="card s12-card-bot">
+      <div class="s12-role"><i data-lucide="rocket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>Júnior / Pleno</div>
+      <div class="s12-salary">R$ 4.000 — R$ 6.000<span style="font-size:18px;color:var(--gray)">/mês</span></div>
+    </div>
+  </div>
+  <div class="s12-source">Fonte: Michael Page</div>
+</div>
+
+<!-- ============================================================ SLIDE 13 -->
+<div class="slide" id="slide-13">
+  <div class="section-title" style="margin-bottom:32px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">IA já faz parte do trabalho real</div>
+  <div class="s13-wrap">
+    <div class="s13-donut-wrap">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="28"/>
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#2DD4A8" stroke-width="28"
+          stroke-dasharray="502"
+          stroke-dashoffset="502"
+          stroke-linecap="round"
+          transform="rotate(-90 100 100)"
+          id="donut13"
+          style="transition:stroke-dashoffset 1.5s ease 0.3s"/>
+      </svg>
+      <div class="s13-center">
+        <div class="s13-pct">71%</div>
+        <div style="font-size:11px;color:var(--gray)">usam IA</div>
+      </div>
+    </div>
+    <div class="s13-stats">
+      <div class="s13-stat">
+        <div class="s13-stat-num">71%</div>
+        <div class="s13-stat-lbl">já usam IA no trabalho</div>
+      </div>
+      <div class="s13-stat">
+        <div class="s13-stat-num">30%</div>
+        <div class="s13-stat-lbl">usam todos os dias</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(139,154,176,0.4)">Fonte: PwC Hopes and Fears 2025</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 14 -->
+<div class="slide" id="slide-14">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Empresas estão acelerando a busca</div>
+  <div class="s14-cards">
+    <div class="card s14-card">
+      <div class="s14-card-icon"><i data-lucide="building-2" style="width:40px;height:40px"></i></div>
+      <div class="s14-pct">44%</div>
+      <div class="s14-lbl">pretendem expandir tech em 2026</div>
+    </div>
+    <div class="card s14-card">
+      <div class="s14-card-icon"><i data-lucide="scroll" style="width:40px;height:40px"></i></div>
+      <div class="s14-pct">48%</div>
+      <div class="s14-lbl">pagam mais por certificação em IA</div>
+    </div>
+  </div>
+  <div style="font-size:12px;color:rgba(139,154,176,0.4);margin-top:24px">Fonte: Robert Half</div>
+</div>
+
+<!-- ============================================================ SLIDE 15 -->
+<div class="slide" id="slide-15">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Dois caminhos. Um destino.</div>
+  <div class="s15-wrap">
+    <div class="s15-path" style="opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <div class="s15-path-title">Com faculdade</div>
+      <div class="s15-node"><i data-lucide="graduation-cap" style="width:24px;height:24px"></i></div>
+      <div class="s15-arrow-v"></div>
+      <div class="s15-node nea">NEA</div>
+      <div class="s15-arrow-v"></div>
+      <div class="s15-node dest"><i data-lucide="check" style="width:24px;height:24px"></i></div>
+      <div class="s15-path-desc" style="color:var(--accent)">O melhor complemento para se destacar</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+      <div style="width:2px;height:120px;background:linear-gradient(to bottom,transparent,var(--accent),transparent)"></div>
+      <div style="font-size:24px;color:var(--accent);font-weight:700">+</div>
+      <div style="width:2px;height:120px;background:linear-gradient(to bottom,var(--accent),transparent)"></div>
+    </div>
+    <div class="s15-path" style="opacity:0;animation:slideLeft 0.6s 0.6s ease both">
+      <div class="s15-path-title">Sem faculdade</div>
+      <div class="s15-node"><i data-lucide="user" style="width:24px;height:24px"></i></div>
+      <div class="s15-arrow-v"></div>
+      <div class="s15-node nea">NEA</div>
+      <div class="s15-arrow-v"></div>
+      <div class="s15-node dest"><i data-lucide="check" style="width:24px;height:24px"></i></div>
+      <div class="s15-path-desc" style="color:var(--accent)">O grande diferencial competitivo</div>
+    </div>
+  </div>
+  <div class="sub" style="opacity:0;animation:fadeUp 0.6s 1s ease both">Diferencial competitivo para <span class="teal">qualquer perfil</span></div>
+</div>
+
+<!-- ============================================================ SLIDE 16 -->
+<div class="slide" id="slide-16">
+  <div style="position:absolute;font-size:clamp(200px,30vw,320px);font-weight:900;color:rgba(45,212,168,0.06);z-index:0;animation:pulse 3s infinite;user-select:none">?</div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div style="font-size:clamp(24px,4vw,56px);font-weight:800;animation:fadeUp 0.8s 0.3s ease both;opacity:0;max-width:700px">Como posicionar seu filho nessa nova realidade?</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 17 -->
+<div class="slide" id="slide-17">
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:40px;opacity:0.08;font-size:80px;filter:blur(1px)">
+    <span><i data-lucide="bot" style="width:80px;height:80px"></i></span><span><i data-lucide="message-circle" style="width:80px;height:80px"></i></span><span><i data-lucide="settings-2" style="width:80px;height:80px"></i></span><span><i data-lucide="brain" style="width:80px;height:80px"></i></span><span><i data-lucide="bar-chart-3" style="width:80px;height:80px"></i></span><span><i data-lucide="settings-2" style="width:80px;height:80px"></i></span>
+  </div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:48px;margin:0 auto 28px;box-shadow:0 0 60px rgba(45,212,168,0.5);animation:glowPulse 2s infinite"><i data-lucide="bot" style="width:48px;height:48px"></i></div>
+    <div style="font-size:clamp(28px,4vw,52px);font-weight:800;animation:fadeUp 0.7s 0.3s ease both;opacity:0">Além do que você já ouviu.</div>
+    <div class="sub" style="opacity:0;animation:fadeUp 0.7s 0.7s ease both;max-width:500px;margin:16px auto 0">Agentes de IA: a tecnologia que empresas já estão pagando pra ter.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 18 -->
+<div class="slide" id="slide-18">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Funcionário vs Agente IA</div>
+  <div style="display:flex;gap:24px;width:100%;max-width:800px">
+    <div class="card" style="flex:1;opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <div style="font-size:clamp(16px,2vw,20px);font-weight:700;color:var(--gray);margin-bottom:20px;text-align:center">Funcionário</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(139,154,176,0.7)"><span><i data-lucide="moon" style="width:24px;height:24px"></i></span><span>Dorme 8h por dia</span></div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(139,154,176,0.7)"><span><i data-lucide="x-circle" style="width:24px;height:24px"></i></span><span>Comete erros por cansaço</span></div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(139,154,176,0.7)"><span><i data-lucide="plane" style="width:24px;height:24px"></i></span><span>Tira férias</span></div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(139,154,176,0.7)"><span><i data-lucide="user" style="width:24px;height:24px"></i></span><span>Atende 1 por vez</span></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--accent);font-weight:700">vs</div>
+    <div class="card card-glow" style="flex:1;border-color:rgba(45,212,168,0.4);opacity:0;animation:slideLeft 0.6s 0.6s ease both">
+      <div style="font-size:clamp(16px,2vw,20px);font-weight:700;color:var(--accent);margin-bottom:20px;text-align:center">Agente IA</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px"><span><i data-lucide="clock" style="width:24px;height:24px"></i></span><span>24h ativo, 7 dias</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span><i data-lucide="check-circle-2" style="width:24px;height:24px"></i></span><span>Preciso e consistente</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span><i data-lucide="infinity" style="width:24px;height:24px"></i></span><span>Sem pausas</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span><i data-lucide="users" style="width:24px;height:24px"></i></span><span>500 simultâneos</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 19 -->
+<div class="slide" id="slide-19">
+  <div class="section-title" style="margin-bottom:32px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Agentes no mundo real</div>
+  <div style="display:flex;gap:20px;width:100%;max-width:900px">
+    <div style="flex:1;opacity:0;animation:fadeUp 0.5s 0.2s ease both">
+      <div style="background:#111b14;border:1px solid #25d366;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+        <div style="background:#075e54;padding:12px 16px;display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#128c7e;display:flex;align-items:center;justify-content:center;font-size:16px"><i data-lucide="utensils" style="width:16px;height:16px"></i></div><div><div style="font-size:12px;font-weight:700;color:#fff">Restaurante Bella</div><div style="font-size:10px;color:#a8d5c8">online</div></div></div>
+        <div style="padding:12px;font-size:11px;display:flex;flex-direction:column;gap:6px">
+          <div style="background:#202c33;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-start">Quero pedir uma pizza <i data-lucide="utensils" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i></div>
+          <div style="background:#005c4b;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-end">Olá! Temos margherita, calabresa e 4 queijos. Qual você prefere? <i data-lucide="smile" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:13px;color:var(--gray)">Restaurante</div>
+    </div>
+    <div style="flex:1;opacity:0;animation:fadeUp 0.5s 0.4s ease both">
+      <div style="background:#111b14;border:1px solid #25d366;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+        <div style="background:#075e54;padding:12px 16px;display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#128c7e;display:flex;align-items:center;justify-content:center;font-size:16px"><i data-lucide="shopping-bag" style="width:16px;height:16px"></i></div><div><div style="font-size:12px;font-weight:700;color:#fff">Loja Online</div><div style="font-size:10px;color:#a8d5c8">online</div></div></div>
+        <div style="padding:12px;font-size:11px;display:flex;flex-direction:column;gap:6px">
+          <div style="background:#202c33;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-start">Tem tênis nr 42?</div>
+          <div style="background:#005c4b;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-end">Sim! Nike Air 42 — R$389. Entrega em 2 dias <i data-lucide="rocket" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:13px;color:var(--gray)">E-commerce</div>
+    </div>
+    <div style="flex:1;opacity:0;animation:fadeUp 0.5s 0.6s ease both">
+      <div style="background:#111b14;border:1px solid #25d366;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+        <div style="background:#075e54;padding:12px 16px;display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#128c7e;display:flex;align-items:center;justify-content:center;font-size:16px"><i data-lucide="cross" style="width:16px;height:16px"></i></div><div><div style="font-size:12px;font-weight:700;color:#fff">Clínica Saúde+</div><div style="font-size:10px;color:#a8d5c8">online</div></div></div>
+        <div style="padding:12px;font-size:11px;display:flex;flex-direction:column;gap:6px">
+          <div style="background:#202c33;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-start">Confirmo consulta 5ª às 14h</div>
+          <div style="background:#005c4b;padding:6px 10px;border-radius:8px;color:#e9edef;align-self:flex-end"><i data-lucide="check-circle-2" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Confirmado! Dr. Carlos, Sala 3. Lembre-se de trazer exames.</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:13px;color:var(--gray)">Clínica</div>
+    </div>
+    <div style="flex:1;opacity:0;animation:fadeUp 0.5s 0.8s ease both">
+      <div style="background:#1a1f2e;border:1px solid var(--card-border);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+        <div style="background:#0d1117;padding:12px 16px;display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:16px"><i data-lucide="bar-chart-3" style="width:20px;height:20px"></i></div><div><div style="font-size:12px;font-weight:700;color:#fff">Dashboard</div><div style="font-size:10px;color:var(--gray)">automação</div></div></div>
+        <div style="padding:12px;font-size:11px;display:flex;flex-direction:column;gap:6px">
+          <div style="background:rgba(45,212,168,0.1);padding:6px 10px;border-radius:6px;color:var(--accent)">✓ 47 docs organizados</div>
+          <div style="background:rgba(45,212,168,0.1);padding:6px 10px;border-radius:6px;color:var(--accent)">✓ Relatório gerado</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:13px;color:var(--gray)">Empresa</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 20 -->
+<div class="slide" id="slide-20">
+  <div style="position:absolute;inset:0;display:flex;gap:20px;padding:60px;opacity:0.15;filter:blur(1px)">
+    <!-- faded phone bg -->
+  </div>
+  <div style="text-align:center;position:relative;z-index:2">
+    <div style="width:80px;height:60px;background:rgba(45,212,168,0.15);border:2px solid var(--accent);border-radius:12px;margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 0 40px rgba(45,212,168,0.4);animation:glowPulse 2s infinite"><i data-lucide="laptop" style="width:32px;height:32px"></i></div>
+    <div style="font-size:clamp(22px,3.5vw,48px);font-weight:800;animation:fadeUp 0.7s 0.3s ease both;opacity:0;max-width:700px;line-height:1.3">Alguém constrói isso.<br>Esse alguém pode ser <span class="teal">você</span>.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 21 -->
+<div class="slide" id="slide-21">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Mitos que vamos destruir</div>
+  <div style="display:flex;flex-direction:column;gap:20px;width:100%;max-width:600px">
+    <div class="card" style="display:flex;align-items:center;gap:20px;opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <span style="font-size:32px"><i data-lucide="brain" style="width:32px;height:32px"></i></span>
+      <div style="flex:1"><div style="font-size:clamp(16px,2vw,20px);font-weight:600">Precisa ser gênio</div></div>
+      <div style="color:#e05555;font-size:24px;font-weight:900">✗</div>
+      <div style="color:var(--accent);font-weight:700;font-size:clamp(14px,1.8vw,18px)">Não precisa.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:20px;opacity:0;animation:slideRight 0.6s 0.6s ease both">
+      <span style="font-size:32px"><i data-lucide="laptop" style="width:32px;height:32px"></i></span>
+      <div style="flex:1"><div style="font-size:clamp(16px,2vw,20px);font-weight:600">Precisa saber programar</div></div>
+      <div style="color:#e05555;font-size:24px;font-weight:900">✗</div>
+      <div style="color:var(--accent);font-weight:700;font-size:clamp(14px,1.8vw,18px)">Não precisa.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:20px;opacity:0;animation:slideRight 0.6s 0.9s ease both">
+      <span style="font-size:32px"><i data-lucide="graduation-cap" style="width:32px;height:32px"></i></span>
+      <div style="flex:1"><div style="font-size:clamp(16px,2vw,20px);font-weight:600">Precisa de diploma anterior</div></div>
+      <div style="color:#e05555;font-size:24px;font-weight:900">✗</div>
+      <div style="color:var(--accent);font-weight:700;font-size:clamp(14px,1.8vw,18px)">Não precisa.</div>
+    </div>
+  </div>
+  <div style="margin-top:32px;font-size:clamp(18px,2.5vw,28px);font-weight:700;color:var(--accent);opacity:0;animation:fadeUp 0.6s 1.3s ease both"><i data-lucide="stairs" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Passo a passo, do zero.</div>
+</div>
+
+<!-- ============================================================ SLIDE 22 -->
+<div class="slide" id="slide-22">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(45,212,168,0.08) 0%,transparent 70%)"></div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,rgba(45,212,168,0.2),rgba(45,212,168,0.05));border:2px solid var(--accent);margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:60px;box-shadow:0 0 50px rgba(45,212,168,0.3);animation:glowPulse 3s infinite"><i data-lucide="laptop" style="width:60px;height:60px"></i></div>
+    <div style="font-size:clamp(22px,3.5vw,48px);font-weight:800;animation:fadeUp 0.7s 0.3s ease both;opacity:0">17 anos. Construindo o que<br>empresas <span class="teal">pagam pra ter</span>.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 23 -->
+<div class="slide" id="slide-23">
+  <div style="position:absolute;top:24px;left:32px;opacity:0.5"><img src="Public/Fotos/logo%20nea.png" style="border-radius:16px;height:22px;object-fit:contain;" alt="NEA"></div>
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)"></div>
+  <div style="text-align:center">
+    <div style="font-size:clamp(28px,4.5vw,64px);font-weight:800;animation:fadeUp 0.8s 0.3s ease both;opacity:0">Quem está te<br>contando isso?</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 24 -->
+<div class="slide" id="slide-24" style="flex-direction:row;padding:0;overflow:hidden">
+  <div style="flex:0 0 42%;height:100%;position:relative;overflow:hidden;opacity:0;animation:fadeIn 0.8s 0.1s ease both">
+    <img src="Public/Fotos/foto_yuri_evento.jpg" style="width:100%;height:100%;object-fit:cover;object-position:center top">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent 55%,#0F1419 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to top,#0F1419 0%,transparent 30%)"></div>
+    <div style="position:absolute;bottom:32px;left:32px">
+      <div style="font-size:clamp(36px,5vw,64px);font-weight:900;line-height:1;text-shadow:0 2px 20px rgba(0,0,0,0.8)">Yuri</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:64px 72px 64px 56px;gap:20px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Fundador do NEA</div>
+      <div style="font-size:clamp(14px,1.7vw,19px);color:var(--gray);line-height:1.5;max-width:380px">Engenheiro de software.<br>Construtor de operações com IA.</div>
+    </div>
+    <div style="width:40px;height:2px;background:var(--accent);opacity:0;animation:fadeIn 0.5s 0.7s ease both"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:0;animation:fadeUp 0.6s 0.8s ease both">
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 18px">
+        <div style="font-size:clamp(18px,2.5vw,26px);font-weight:900;color:var(--accent)">EXIT</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:3px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase">milion&#225;rio</div>
+      </div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 18px">
+        <div style="font-size:clamp(18px,2.5vw,26px);font-weight:900;color:var(--accent)">70%</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:3px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase">reinvestido</div>
+      </div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 18px">
+        <div style="font-size:clamp(18px,2.5vw,26px);font-weight:900;color:var(--accent)">6</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:3px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase">empresas em constru&#231;&#227;o</div>
+      </div>
+      <div style="background:rgba(45,212,168,0.06);border:1px solid rgba(45,212,168,0.25);border-radius:12px;padding:14px 18px">
+        <div style="font-size:clamp(12px,1.3vw,14px);font-weight:700;color:var(--accent);line-height:1.4">IA &middot; Software<br>Inova&#231;&#227;o aplicada</div>
+      </div>
+    </div>
+    <div style="font-size:clamp(13px,1.5vw,16px);color:rgba(139,154,176,0.7);line-height:1.6;opacity:0;animation:fadeUp 0.6s 1.1s ease both;max-width:380px;border-left:2px solid rgba(45,212,168,0.3);padding-left:16px;font-style:italic">
+      "O NEA n&#227;o nasce da teoria.<br>Nasce de empresas reais em opera&#231;&#227;o."
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 25 -->
+<div class="slide" id="slide-25" style="padding:0;overflow:hidden">
+  <div style="position:absolute;right:0;top:0;bottom:0;width:52%;overflow:hidden;opacity:0;animation:slideLeft 0.9s 0.4s ease both">
+    <img src="Public/Fotos/site%20visto.png" style="width:100%;height:100%;object-fit:cover;object-position:top left">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#0F1419 0%,rgba(15,20,25,0.4) 55%,rgba(15,20,25,0.8) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(15,20,25,0.1) 0%,rgba(15,20,25,0.6) 100%)"></div>
+  </div>
+  <div style="position:relative;z-index:2;width:54%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:64px 48px 64px 80px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <img src="Public/Fotos/Logo%20Visto.jpg" style="border-radius:12px;height:48px;object-fit:contain;object-position:left">
+    </div>
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1">Visto</div>
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);margin-top:6px;font-weight:500">gest&#227;o inteligente para lojas no WhatsApp</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp 0.6s 0.6s ease both"><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Varejo</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">WhatsApp</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Gest&#227;o inteligente</span></div>
+    <div style="font-size:clamp(13px,1.6vw,17px);color:var(--gray);line-height:1.65;opacity:0;animation:fadeUp 0.6s 0.8s ease both;max-width:360px">Organiza cat&#225;logo, reservas, pagamentos e automa&#231;&#245;es para lojas que vendem pelo WhatsApp.</div>
+    <div style="font-size:clamp(12px,1.4vw,15px);color:var(--white);font-weight:600;opacity:0;animation:fadeUp 0.6s 0.9s ease both;max-width:360px">"Opera&#231;&#227;o organizada. Venda mais, com menos esfor&#231;o."</div>
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:12px 18px;opacity:0;animation:fadeUp 0.6s 1.1s ease both;width:fit-content">
+      <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--accent)"></i>
+      <span style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em">POSS&#205;VEL DESTINO DE EST&#193;GIO NEA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 26 -->
+<div class="slide" id="slide-26" style="padding:0;overflow:hidden">
+  <div style="position:absolute;right:0;top:0;bottom:0;width:52%;overflow:hidden;opacity:0;animation:slideLeft 0.9s 0.4s ease both">
+    <img src="Public/Fotos/Vio10.png" style="width:100%;height:100%;object-fit:cover;object-position:top left">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#0F1419 0%,rgba(15,20,25,0.4) 55%,rgba(15,20,25,0.8) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(15,20,25,0.1) 0%,rgba(15,20,25,0.6) 100%)"></div>
+  </div>
+  <div style="position:relative;z-index:2;width:54%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:64px 48px 64px 80px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <img src="Public/Fotos/logo%20vio10.png" style="border-radius:12px;height:48px;object-fit:contain;object-position:left">
+    </div>
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1">Vio10</div>
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);margin-top:6px;font-weight:500">mobilidade urbana simples e acess&#237;vel</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp 0.6s 0.6s ease both"><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Mobilidade</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">WhatsApp</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">0800</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">App</span></div>
+    <div style="font-size:clamp(13px,1.6vw,17px);color:var(--gray);line-height:1.65;opacity:0;animation:fadeUp 0.6s 0.8s ease both;max-width:360px">Pedir corrida pelo WhatsApp, por liga&#231;&#227;o 0800 ou pelo app. Simples para quem usa, eficiente para quem opera.</div>
+    <div style="font-size:clamp(12px,1.4vw,15px);color:var(--white);font-weight:600;opacity:0;animation:fadeUp 0.6s 0.9s ease both;max-width:360px">"Tecnologia que inclui. Mobilidade que funciona."</div>
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:12px 18px;opacity:0;animation:fadeUp 0.6s 1.1s ease both;width:fit-content">
+      <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--accent)"></i>
+      <span style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em">POSS&#205;VEL DESTINO DE EST&#193;GIO NEA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 27 -->
+<div class="slide" id="slide-27" style="padding:0;overflow:hidden">
+  <div style="position:absolute;right:0;top:0;bottom:0;width:52%;overflow:hidden;opacity:0;animation:slideLeft 0.9s 0.4s ease both">
+    <img src="Public/Fotos/Site%20IAFIT.png" style="width:100%;height:100%;object-fit:cover;object-position:top left">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#0F1419 0%,rgba(15,20,25,0.4) 55%,rgba(15,20,25,0.8) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(15,20,25,0.1) 0%,rgba(15,20,25,0.6) 100%)"></div>
+  </div>
+  <div style="position:relative;z-index:2;width:54%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:64px 48px 64px 80px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <img src="Public/Fotos/logo%20iafit.jpg" style="border-radius:12px;height:48px;object-fit:contain;object-position:left">
+    </div>
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1">IAFIT</div>
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);margin-top:6px;font-weight:500">agentes de IA para academias</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp 0.6s 0.6s ease both"><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Academias</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">IA</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Automa&#231;&#227;o</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Pix</span></div>
+    <div style="font-size:clamp(13px,1.6vw,17px);color:var(--gray);line-height:1.65;opacity:0;animation:fadeUp 0.6s 0.8s ease both;max-width:360px">Responde leads, agenda, vende, cobra via Pix e reativa alunos automaticamente. Menos perda. Mais resultado.</div>
+    <div style="font-size:clamp(12px,1.4vw,15px);color:var(--white);font-weight:600;opacity:0;animation:fadeUp 0.6s 0.9s ease both;max-width:360px">"Opera&#231;&#227;o enxuta. Crescimento real."</div>
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:12px 18px;opacity:0;animation:fadeUp 0.6s 1.1s ease both;width:fit-content">
+      <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--accent)"></i>
+      <span style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em">POSS&#205;VEL DESTINO DE EST&#193;GIO NEA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 28 -->
+<div class="slide" id="slide-28" style="padding:0;overflow:hidden">
+  <div style="position:absolute;right:0;top:0;bottom:0;width:52%;overflow:hidden;opacity:0;animation:slideLeft 0.9s 0.4s ease both">
+    <img src="Public/Fotos/Site%20AIPHARMA.png" style="width:100%;height:100%;object-fit:cover;object-position:top left">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#0F1419 0%,rgba(15,20,25,0.4) 55%,rgba(15,20,25,0.8) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(15,20,25,0.1) 0%,rgba(15,20,25,0.6) 100%)"></div>
+  </div>
+  <div style="position:relative;z-index:2;width:54%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:64px 48px 64px 80px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <img src="Public/Fotos/logo%20aipharma.jpg" style="border-radius:12px;height:48px;object-fit:contain;object-position:left">
+    </div>
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1">AIPharma</div>
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);margin-top:6px;font-weight:500">IA aplicada &#224; opera&#231;&#227;o de farm&#225;cias</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp 0.6s 0.6s ease both"><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Farm&#225;cias</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Atendimento</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">IA</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Pix</span></div>
+    <div style="font-size:clamp(13px,1.6vw,17px);color:var(--gray);line-height:1.65;opacity:0;animation:fadeUp 0.6s 0.8s ease both;max-width:360px">Acelera atendimento, responde clientes, envia ofertas, cobra por Pix e reativa quem parou de comprar.</div>
+    <div style="font-size:clamp(12px,1.4vw,15px);color:var(--white);font-weight:600;opacity:0;animation:fadeUp 0.6s 0.9s ease both;max-width:360px">"Menos lentid&#227;o. Mais convers&#227;o."</div>
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:12px 18px;opacity:0;animation:fadeUp 0.6s 1.1s ease both;width:fit-content">
+      <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--accent)"></i>
+      <span style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em">POSS&#205;VEL DESTINO DE EST&#193;GIO NEA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 29 -->
+<div class="slide" id="slide-29" style="padding:0;overflow:hidden">
+  <div style="position:absolute;right:0;top:0;bottom:0;width:52%;overflow:hidden;opacity:0;animation:slideLeft 0.9s 0.4s ease both">
+    <img src="Public/Fotos/Site%20Skinnia.png" style="width:100%;height:100%;object-fit:cover;object-position:top left">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,#0F1419 0%,rgba(15,20,25,0.4) 55%,rgba(15,20,25,0.8) 100%)"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(15,20,25,0.1) 0%,rgba(15,20,25,0.6) 100%)"></div>
+  </div>
+  <div style="position:relative;z-index:2;width:54%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:64px 48px 64px 80px">
+    <div style="opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <img src="Public/Fotos/Logo%20Skinnia%20copy.png" style="border-radius:12px;height:48px;object-fit:contain;object-position:left">
+    </div>
+    <div style="opacity:0;animation:fadeUp 0.6s 0.4s ease both">
+      <div style="font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1">Skinn.ia</div>
+      <div style="font-size:clamp(12px,1.3vw,15px);color:var(--accent);margin-top:6px;font-weight:500">IA para neg&#243;cios de beleza</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;opacity:0;animation:fadeUp 0.6s 0.6s ease both"><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Beleza</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Premium</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">Agenda</span><span style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:50px;padding:5px 14px;font-size:clamp(11px,1.2vw,13px);font-weight:600;white-space:nowrap">No-show</span></div>
+    <div style="font-size:clamp(13px,1.6vw,17px);color:var(--gray);line-height:1.65;opacity:0;animation:fadeUp 0.6s 0.8s ease both;max-width:360px">Para cl&#237;nicas, sal&#245;es, barbearias e est&#250;dios. Atende, vende, agenda e reduz cancelamentos.</div>
+    <div style="font-size:clamp(12px,1.4vw,15px);color:var(--white);font-weight:600;opacity:0;animation:fadeUp 0.6s 0.9s ease both;max-width:360px">"Experi&#234;ncia premium. Opera&#231;&#227;o sofisticada com IA."</div>
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:12px 18px;opacity:0;animation:fadeUp 0.6s 1.1s ease both;width:fit-content">
+      <i data-lucide="briefcase" style="width:16px;height:16px;color:var(--accent)"></i>
+      <span style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:0.04em">POSS&#205;VEL DESTINO DE EST&#193;GIO NEA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 30 -->
+<div class="slide" id="slide-30">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(45,212,168,0.06) 0%,transparent 70%)"></div>
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:32px;text-align:center;max-width:840px">
+    <div style="opacity:0;animation:fadeUp 0.7s 0.1s ease both">
+      <div style="font-size:clamp(11px,1.2vw,14px);font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">Ecossistema real</div>
+      <div style="font-size:clamp(28px,4.5vw,60px);font-weight:900;line-height:1.1">O est&#225;gio pode<br>come&#231;ar <span class="teal">aqui.</span></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;opacity:0;animation:fadeUp 0.7s 0.5s ease both">
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px 20px;height:56px;display:flex;align-items:center"><img src="Public/Fotos/Logo%20Visto.jpg" style="border-radius:12px;height:28px;object-fit:contain"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px 20px;height:56px;display:flex;align-items:center"><img src="Public/Fotos/logo%20vio10.png" style="border-radius:12px;height:28px;object-fit:contain"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px 20px;height:56px;display:flex;align-items:center"><img src="Public/Fotos/logo%20iafit.jpg" style="border-radius:12px;height:28px;object-fit:contain"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px 20px;height:56px;display:flex;align-items:center"><img src="Public/Fotos/logo%20aipharma.jpg" style="border-radius:12px;height:28px;object-fit:contain"></div>
+      <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px 20px;height:56px;display:flex;align-items:center"><img src="Public/Fotos/Logo%20Skinnia%20copy.png" style="border-radius:12px;height:28px;object-fit:contain"></div>
+    </div>
+    <div style="font-size:clamp(14px,1.8vw,20px);color:var(--gray);line-height:1.7;max-width:600px;opacity:0;animation:fadeUp 0.7s 0.9s ease both">
+      O aluno do NEA n&#227;o estuda isolado do mercado.<br>
+      Ele &#233; preparado <strong style="color:var(--white)">dentro</strong> de um ecossistema de opera&#231;&#245;es reais.
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;opacity:0;animation:fadeUp 0.7s 1.2s ease both">
+      <img src="Public/Fotos/logo%20nea.png" style="border-radius:16px;height:36px;object-fit:contain">
+      <div style="width:1px;height:32px;background:rgba(45,212,168,0.3)"></div>
+      <span style="font-size:clamp(12px,1.4vw,15px);color:var(--accent);font-weight:600">Forma&#231;&#227;o com destino pr&#225;tico</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 31 -->
+<div class="slide" id="slide-31">
+  <div style="display:flex;gap:60px;align-items:center;width:100%;max-width:800px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <div style="font-size:clamp(18px,2.5vw,28px);font-weight:700;color:var(--accent);margin-bottom:8px">Demanda</div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.3);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="building-2" style="width:24px;height:24px"></i></span><div><div style="font-weight:600">Vaga aberta</div><div style="font-size:12px;color:var(--accent)">● urgente</div></div></div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.3);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="building-2" style="width:24px;height:24px"></i></span><div><div style="font-weight:600">Vaga aberta</div><div style="font-size:12px;color:var(--accent)">● urgente</div></div></div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.3);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="building-2" style="width:24px;height:24px"></i></span><div><div style="font-weight:600">Vaga aberta</div><div style="font-size:12px;color:var(--accent)">● urgente</div></div></div>
+    </div>
+    <div style="width:60px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#e05555;opacity:0;animation:fadeIn 0.6s 0.8s ease both"><i data-lucide="flame" style="width:32px;height:32px"></i></div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;opacity:0;animation:slideLeft 0.6s 0.5s ease both">
+      <div style="font-size:clamp(18px,2.5vw,28px);font-weight:700;color:var(--gray);margin-bottom:8px">Formação</div>
+      <div style="background:rgba(139,154,176,0.05);border:1px solid rgba(139,154,176,0.1);border-radius:12px;padding:40px;display:flex;align-items:center;justify-content:center;color:rgba(139,154,176,0.3);font-size:14px">vazio.</div>
+    </div>
+  </div>
+  <div style="margin-top:36px;font-size:clamp(18px,2.5vw,28px);font-weight:700;opacity:0;animation:fadeUp 0.6s 1s ease both">Demanda real. Formação: <span class="teal">zero.</span></div>
+</div>
+
+<!-- ============================================================ SLIDE 32 -->
+<div class="slide" id="slide-32">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Por que o NEA é diferente</div>
+  <div style="display:flex;gap:20px;width:100%;max-width:900px;align-items:stretch">
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:slideRight 0.6s 0.3s ease both;filter:saturate(0.4)">
+      <div style="font-size:40px;margin-bottom:12px"><i data-lucide="monitor" style="width:40px;height:40px"></i></div>
+      <div style="font-weight:700;font-size:clamp(14px,1.8vw,18px);margin-bottom:12px">YouTube</div>
+      <div style="color:var(--gray);font-size:clamp(12px,1.4vw,15px);margin-bottom:16px">Te ensina e te larga</div>
+      <div style="color:#e05555;font-size:28px">✗</div>
+    </div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.6s 0.5s ease both;filter:saturate(0.4)">
+      <div style="font-size:40px;margin-bottom:12px"><i data-lucide="graduation-cap" style="width:40px;height:40px"></i></div>
+      <div style="font-weight:700;font-size:clamp(14px,1.8vw,18px);margin-bottom:12px">Faculdade</div>
+      <div style="color:var(--gray);font-size:clamp(12px,1.4vw,15px);margin-bottom:16px">Teoria que já mudou</div>
+      <div style="color:#e05555;font-size:28px">✗</div>
+    </div>
+    <div class="card card-glow" style="flex:1.4;text-align:center;border-color:rgba(45,212,168,0.5);background:rgba(45,212,168,0.06);opacity:0;animation:slideLeft 0.6s 0.7s ease both">
+      <div style="width:64px;height:44px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><img src="Public/Fotos/logo%20nea.png" style="border-radius:16px;height:36px;object-fit:contain;" alt="NEA"></div>
+      <div style="font-weight:700;font-size:clamp(15px,2vw,20px);margin-bottom:12px;color:var(--accent)">NEA</div>
+      <div style="font-size:clamp(13px,1.5vw,16px);margin-bottom:16px">Formação completa de verdade</div>
+      <div style="color:var(--accent);font-size:40px">✓</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 33 -->
+<div class="slide" id="slide-33">
+  <div style="text-align:center">
+    <div style="width:140px;height:140px;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;animation:logoGlow 1s 0.3s ease both,glowPulse 3s 1.3s infinite;filter:drop-shadow(0 0 20px rgba(45,212,168,0.5))"><img src="Public/Fotos/logo%20nea.png" style="border-radius:16px;width:100px;height:100px;object-fit:contain;" alt="NEA"></div>
+    <div style="font-size:clamp(28px,4.5vw,64px);font-weight:800;animation:fadeUp 0.8s 0.6s ease both;opacity:0">A direção que faltava.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 34 -->
+<div class="slide" id="slide-34">
+  <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0F1419;font-size:13px;font-weight:800;padding:8px 20px;border-radius:50px;letter-spacing:0.08em;animation:fadeUp 0.6s ease both">TURMA 01 — INAUGURAL</div>
+  
+  <div style="position:relative;width:320px;height:280px;margin:20px auto;animation:fadeIn 1s 0.3s ease both">
+    <svg width="320" height="280" viewBox="0 0 320 280">
+      <defs>
+        <radialGradient id="mentorGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+          <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.4" />
+          <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
+        </radialGradient>
+      </defs>
+      
+      <!-- connection lines with flow animation -->
+      <g stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4" style="animation: lineFlow 2s linear infinite">
+        <line x1="160" y1="30" x2="160" y2="105" />
+        <line x1="270" y1="70" x2="185" y2="117" />
+        <line x1="300" y1="160" x2="188" y2="142" />
+        <line x1="250" y1="230" x2="185" y2="155" />
+        <line x1="160" y1="250" x2="160" y2="155" />
+        <line x1="70" y1="230" x2="135" y2="155" />
+        <line x1="20" y1="160" x2="132" y2="142" />
+        <line x1="50" y1="70" x2="135" y2="117" />
+      </g>
+
+      <!-- mentor center -->
+      <circle cx="160" cy="130" r="35" fill="url(#mentorGlow)" style="animation: pulse 3s infinite" />
+      <circle cx="160" cy="130" r="28" fill="rgba(45,212,168,0.15)" stroke="var(--accent)" stroke-width="2.5" style="transform-origin: 160px 130px; animation: mentorPulse 3s infinite" />
+      <text x="160" y="137" text-anchor="middle" fill="var(--accent)" font-size="18" font-weight="900" style="pointer-events:none">M</text>
+
+      <!-- students -->
+      <g fill="rgba(255,255,255,0.05)" stroke="rgba(45,212,168,0.4)" stroke-width="1">
+        <circle cx="160" cy="30" r="20" />
+        <circle cx="270" cy="70" r="20" />
+        <circle cx="300" cy="160" r="20" />
+        <circle cx="250" cy="230" r="20" />
+        <circle cx="160" cy="250" r="20" />
+        <circle cx="70" cy="230" r="20" />
+        <circle cx="20" cy="160" r="20" />
+        <circle cx="50" cy="70" r="20" />
+      </g>
+      
+      <!-- student inner dots -->
+      <g fill="var(--gray)" opacity="0.6">
+        <circle cx="160" cy="30" r="6" />
+        <circle cx="270" cy="70" r="6" />
+        <circle cx="300" cy="160" r="6" />
+        <circle cx="250" cy="230" r="6" />
+        <circle cx="160" cy="250" r="6" />
+        <circle cx="70" cy="230" r="6" />
+        <circle cx="20" cy="160" r="6" />
+        <circle cx="50" cy="70" r="6" />
+      </g>
+    </svg>
+  </div>
+  
+  <div style="font-size:clamp(20px,2.8vw,32px);font-weight:800;color:var(--accent);text-align:center;animation:fadeUp 0.8s 0.8s ease both;opacity:0;margin-top:10px">Poucos alunos. Máxima atenção.</div>
+</div>
+
+<!-- ============================================================ SLIDE 35 -->
+<div class="slide" id="slide-35">
+  <div style="text-align:center">
+    <div style="margin-bottom:24px;animation:fadeIn 0.6s 0.2s ease both;opacity:0">
+      <svg width="200" height="40" viewBox="0 0 200 40">
+        <path d="M10 20 Q50 5 100 20 Q150 35 190 20" fill="none" stroke="#2DD4A8" stroke-width="2.5" stroke-dasharray="220" stroke-dashoffset="220" style="animation:drawLine 1.5s 0.5s ease forwards">
+          <animate attributeName="stroke-dashoffset" from="220" to="0" dur="1.5s" begin="0.5s" fill="freeze"/>
+        </path>
+        <polygon points="190,15 200,20 190,25" fill="#2DD4A8"/>
+      </svg>
+    </div>
+    <div style="font-size:clamp(32px,5vw,72px);font-weight:900;animation:fadeUp 0.8s 0.4s ease both;opacity:0">Como funciona<br>o <span class="teal">NEA</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 36 -->
+<div class="slide" id="slide-36">
+  <div class="section-title" style="margin-bottom:48px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Sua jornada de 12 meses</div>
+  <div style="position:relative;width:100%;max-width:800px">
+    <div style="position:absolute;top:28px;left:40px;right:40px;height:3px;background:rgba(45,212,168,0.2);border-radius:2px;overflow:hidden">
+      <div id="timeline-line" style="height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:none;border-radius:2px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 0.4s ease both">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="rocket" style="width:48px;height:48px"></i></div>
+        <div style="text-align:center;max-width:120px"><div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">T1</div><div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray)">Fundamentos</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 0.7s ease both">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="settings-2" style="width:48px;height:48px"></i></div>
+        <div style="text-align:center;max-width:120px"><div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">T2</div><div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray)">Evolução</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 1s ease both">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="star" style="width:48px;height:48px"></i></div>
+        <div style="text-align:center;max-width:120px"><div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">T3</div><div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray)">Portfólio</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 1.3s ease both">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f0c040,#e0a020);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(240,192,64,0.4)"><i data-lucide="trophy" style="width:48px;height:48px"></i></div>
+        <div style="text-align:center;max-width:120px"><div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">T4</div><div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray)">Projeto Final</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:40px;font-size:clamp(14px,1.8vw,20px);color:var(--gray);text-align:center;opacity:0;animation:fadeUp 0.6s 1.7s ease both">12 meses &nbsp;|&nbsp; 4 trimestres &nbsp;|&nbsp; 8 módulos</div>
+</div>
+
+<!-- ============================================================ SLIDE 37 -->
+<div class="slide" id="slide-37">
+  <div style="width:100%;max-width:680px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">
+      <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0F1419;font-weight:800;font-size:14px;padding:6px 14px;border-radius:50px">T1 — 1º TRIMESTRE</div>
+      <div style="height:1px;flex:1;background:rgba(45,212,168,0.3)"></div>
+    </div>
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4);opacity:0;animation:fadeUp 0.6s 0.3s ease both">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="brain" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Fundamentos de IA</div><div style="font-size:12px;color:var(--gray)">Conceitos base</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="bot" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Primeiros agentes</div><div style="font-size:12px;color:var(--gray)">Mão na massa</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="file-text" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Prompt engineering</div><div style="font-size:12px;color:var(--gray)">Comunicar com IA</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="globe" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Inglês técnico</div><div style="font-size:12px;color:var(--gray)">Base essencial</div></div></div>
+      </div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:14px 18px;display:flex;gap:20px">
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(12px,1.4vw,15px)">✓ 3 agentes entregues</span>
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(12px,1.4vw,15px)">✓ 1º relatório técnico</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 38 -->
+<div class="slide" id="slide-38">
+  <div style="width:100%;max-width:680px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">
+      <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0F1419;font-weight:800;font-size:14px;padding:6px 14px;border-radius:50px">T2 — 2º TRIMESTRE</div>
+      <div style="height:1px;flex:1;background:rgba(45,212,168,0.3)"></div>
+    </div>
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4);opacity:0;animation:fadeUp 0.6s 0.3s ease both">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:24px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="construction" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">Arquitetura de agentes</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="link-2" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">Integração com APIs</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="flame" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">Automação comercial</div></div>
+      </div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:14px 18px;display:flex;gap:20px;flex-wrap:wrap">
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(12px,1.4vw,15px)">✓ 2 agentes complexos</span>
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(12px,1.4vw,15px)">✓ Pitch de apresentação</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 39 -->
+<div class="slide" id="slide-39">
+  <div style="width:100%;max-width:680px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">
+      <div style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0F1419;font-weight:800;font-size:14px;padding:6px 14px;border-radius:50px">T3 — 3º TRIMESTRE</div>
+      <div style="height:1px;flex:1;background:rgba(45,212,168,0.3)"></div>
+    </div>
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4);opacity:0;animation:fadeUp 0.6s 0.3s ease both">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:24px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="rocket" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">Agentes avançados</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="briefcase" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">IA para negócios</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="font-size:32px"><i data-lucide="file-text" style="width:32px;height:32px"></i></span><div style="font-weight:600;font-size:clamp(12px,1.4vw,15px)">Portfólio profissional</div></div>
+      </div>
+      <div style="background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.25);border-radius:10px;padding:14px 18px">
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(12px,1.4vw,15px)">✓ Simulação de atendimento real</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 40 -->
+<div class="slide" id="slide-40">
+  <div style="width:100%;max-width:680px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">
+      <div style="background:linear-gradient(135deg,#f0c040,#e0a020);color:#0F1419;font-weight:800;font-size:14px;padding:6px 14px;border-radius:50px"><i data-lucide="trophy" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> T4 — TRIMESTRE FINAL</div>
+      <div style="height:1px;flex:1;background:rgba(240,192,64,0.3)"></div>
+    </div>
+    <div class="card" style="border-color:rgba(240,192,64,0.5);box-shadow:0 0 40px rgba(240,192,64,0.15);opacity:0;animation:fadeUp 0.6s 0.3s ease both">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="target" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Projeto final prático</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="file-text" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Preparação para estágio</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px"><i data-lucide="message-circle" style="width:28px;height:28px"></i></span><div><div style="font-weight:600;font-size:clamp(13px,1.5vw,16px)">Entrevista + banca</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(45,212,168,0.08);border-radius:10px;padding:10px;border:1px solid rgba(45,212,168,0.3)"><span style="font-size:32px"><i data-lucide="banknote" style="width:32px;height:32px"></i></span><div><div style="font-weight:800;font-size:clamp(13px,1.5vw,18px);color:var(--accent)">ESTÁGIO REMUNERADO</div></div></div>
+      </div>
+      <div style="background:rgba(45,212,168,0.1);border:1px solid rgba(45,212,168,0.35);border-radius:10px;padding:14px 18px;text-align:center">
+        <span style="color:var(--accent);font-weight:700;font-size:clamp(13px,1.5vw,16px)">Remuneração atualizada conforme mercado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 41 -->
+<div class="slide" id="slide-41">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Do zero ao mercado.</div>
+  <div style="position:relative;width:100%;max-width:800px;margin-bottom:40px">
+    <div style="position:absolute;top:28px;left:40px;right:40px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 0.3s ease both"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="rocket" style="width:48px;height:48px"></i></div><div style="text-align:center"><div style="font-weight:700">T1</div><div style="font-size:12px;color:var(--gray)">Fundamentos</div></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 0.6s ease both"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="settings-2" style="width:48px;height:48px"></i></div><div style="text-align:center"><div style="font-weight:700">T2</div><div style="font-size:12px;color:var(--gray)">Evolução</div></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 0.9s ease both"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(45,212,168,0.4)"><i data-lucide="star" style="width:48px;height:48px"></i></div><div style="text-align:center"><div style="font-weight:700">T3</div><div style="font-size:12px;color:var(--gray)">Portfólio</div></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 1.2s ease both"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f0c040,#e0a020);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(240,192,64,0.4)"><i data-lucide="trophy" style="width:48px;height:48px"></i></div><div style="text-align:center"><div style="font-weight:700">T4</div><div style="font-size:12px;color:var(--gray)">Final</div></div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;animation:fadeUp 0.5s 1.5s ease both">
+        <div style="width:72px;height:56px;border-radius:12px;background:rgba(45,212,168,0.15);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(45,212,168,0.3);animation:glowPulse 2s infinite"><i data-lucide="building-2" style="width:40px;height:40px"></i></div>
+        <div style="text-align:center"><div style="font-weight:700;color:var(--accent)">Mercado</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:clamp(20px,3vw,36px);font-weight:700;color:var(--accent);opacity:0;animation:fadeUp 0.6s 1.9s ease both">Em 12 meses.</div>
+</div>
+
+<!-- ============================================================ SLIDE 42 -->
+<div class="slide" id="slide-42">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Proporção da formação</div>
+  <div style="width:100%;max-width:700px">
+    <div style="background:rgba(255,255,255,0.05);border-radius:16px;overflow:hidden;height:80px;position:relative;margin-bottom:20px">
+      <div id="bar36" style="height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;padding-left:24px;transition:none">
+        <span style="font-weight:800;font-size:clamp(18px,2.5vw,28px);color:#0F1419">PRÁTICO — 90%</span>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:16px;overflow:hidden;height:48px">
+      <div id="bar36b" style="height:100%;width:0;background:rgba(139,154,176,0.3);border-radius:16px;display:flex;align-items:center;padding-left:16px;transition:none">
+        <span style="font-weight:600;font-size:clamp(14px,1.8vw,18px);color:var(--gray)">Teoria — 10%</span>
+      </div>
+    </div>
+    <div style="font-size:clamp(20px,3vw,36px);font-weight:700;color:var(--accent);text-align:center;margin-top:32px;opacity:0;animation:fadeUp 0.6s 1.2s ease both">Construir, não assistir.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 43 -->
+<div class="slide" id="slide-43">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Inglês para trabalhar</div>
+  <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:0;height:240px;width:100%;max-width:680px;position:relative">
+    <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(45,212,168,0.2)"></div>
+    <div style="display:flex;align-items:flex-end;gap:16px;height:100%">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;opacity:0;animation:stepUp 0.5s 0.3s ease both">
+        <div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray);text-align:center">Vocabulário base</div>
+        <div style="height:60px;background:rgba(45,212,168,0.2);border-radius:8px 8px 0 0;border-top:2px solid var(--card-border)"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;opacity:0;animation:stepUp 0.5s 0.6s ease both">
+        <div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray);text-align:center">Leitura técnica</div>
+        <div style="height:110px;background:rgba(45,212,168,0.3);border-radius:8px 8px 0 0;border-top:2px solid rgba(45,212,168,0.4)"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;opacity:0;animation:stepUp 0.5s 0.9s ease both">
+        <div style="font-size:clamp(11px,1.3vw,14px);color:var(--gray);text-align:center">Escrita + apres.</div>
+        <div style="height:160px;background:rgba(45,212,168,0.4);border-radius:8px 8px 0 0;border-top:2px solid rgba(45,212,168,0.6)"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;opacity:0;animation:stepUp 0.5s 1.2s ease both">
+        <div style="font-size:clamp(11px,1.3vw,14px);color:var(--accent);text-align:center;font-weight:700">Conversação prof.</div>
+        <div style="height:210px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:8px 8px 0 0;box-shadow:0 0 20px rgba(45,212,168,0.4)"></div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:clamp(16px,2vw,22px);color:var(--gray);text-align:center;margin-top:24px;opacity:0;animation:fadeUp 0.6s 1.7s ease both">Inglês para trabalhar, <span class="teal">não para prova.</span></div>
+</div>
+
+<!-- ============================================================ SLIDE 44 -->
+<div class="slide" id="slide-44">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Rotina semanal</div>
+  <div style="display:flex;align-items:center;gap:16px;width:100%;max-width:800px">
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <div style="font-size:36px;margin-bottom:10px"><i data-lucide="target" style="width:36px;height:36px"></i></div>
+      <div style="font-size:clamp(16px,2vw,22px);font-weight:700;color:var(--accent)">SEG</div>
+      <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);margin-top:6px">Kickoff da semana</div>
+    </div>
+    <div style="color:var(--accent);font-size:28px;opacity:0;animation:fadeIn 0.4s 0.6s ease both">→</div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.6s 0.7s ease both">
+      <div style="font-size:36px;margin-bottom:10px"><i data-lucide="flag" style="width:36px;height:36px"></i></div>
+      <div style="font-size:clamp(16px,2vw,22px);font-weight:700;color:var(--accent)">QUA</div>
+      <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);margin-top:6px">Checkpoint</div>
+    </div>
+    <div style="color:var(--accent);font-size:28px;opacity:0;animation:fadeIn 0.4s 1s ease both">→</div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:slideLeft 0.6s 1.1s ease both">
+      <div style="font-size:36px;margin-bottom:10px"><i data-lucide="star" style="width:36px;height:36px"></i></div>
+      <div style="font-size:clamp(16px,2vw,22px);font-weight:700;color:var(--accent)">SEX</div>
+      <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);margin-top:6px">Review + Feedback</div>
+    </div>
+  </div>
+  <div style="margin-top:28px;font-size:clamp(14px,1.8vw,20px);color:var(--gray);opacity:0;animation:fadeUp 0.6s 1.5s ease both"><i data-lucide="message-circle" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> + Check-in diário via plataforma</div>
+</div>
+
+<!-- ============================================================ SLIDE 45 -->
+<div class="slide" id="slide-45">
+  <div style="font-size:clamp(18px,2.5vw,28px);font-weight:700;margin-bottom:24px;text-align:center;opacity:0;animation:fadeUp 0.5s 0.1s ease both">Você recebe isso toda sexta.</div>
+  <div style="opacity:0;animation:notifDrop 0.7s 0.4s ease both">
+    <div style="width:320px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+      <!-- WhatsApp header -->
+      <div style="background:#075e54;padding:12px 16px;display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#0F1419;flex-shrink:0">N</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#fff">NEA — Acompanhamento</div>
+          <div style="font-size:11px;color:#a8d5c8">online</div>
+        </div>
+        <div style="display:flex;gap:14px;color:#a8d5c8;font-size:16px"><i data-lucide="phone" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> ⋮</div>
+      </div>
+      <!-- Chat background -->
+      <div style="background:#0d1117;padding:16px;min-height:260px;font-size:12px">
+        <div style="display:flex;justify-content:flex-end">
+          <div style="background:#005c4b;border-radius:12px 2px 12px 12px;padding:10px 14px;max-width:85%;line-height:1.5">
+            <div style="color:#e9edef"><i data-lucide="bar-chart-3" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> <strong>Resumo semanal — João</strong></div>
+            <div style="margin-top:8px;color:#e9edef;line-height:1.8">
+              <i data-lucide="check-circle-2" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Presença: 100%<br>
+              <i data-lucide="package" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Entregas: 3/3<br>
+              <i data-lucide="star" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Destaque: 1º agente funcional<br>
+              <i data-lucide="trending-up" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Foco: Melhorar documentação
+            </div>
+            <div style="margin-top:8px;display:flex;justify-content:flex-end;align-items:center;gap:4px">
+              <span style="color:#8b9ab0;font-size:10px">Sexta, 18:32</span>
+              <span style="color:#4fc3f7;font-size:12px">✓✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Input bar -->
+      <div style="background:#1f2c34;padding:10px 14px;display:flex;align-items:center;gap:12px">
+        <div style="flex:1;background:#2a3942;border-radius:20px;padding:8px 14px;font-size:12px;color:#8b9ab0">Responder...</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#00a884;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px"><i data-lucide="message-circle" style="width:16px;height:16px"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 46 -->
+<div class="slide" id="slide-46">
+  <div class="section-title" style="margin-bottom:32px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Como você é avaliado</div>
+  <div style="display:flex;align-items:center;gap:60px">
+    <div style="position:relative;width:200px;height:200px;flex-shrink:0">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="28"/>
+        <!-- 40% Prática - teal -->
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#2DD4A8" stroke-width="28"
+          stroke-dasharray="502" stroke-dashoffset="502"
+          transform="rotate(-90 100 100)" id="donut40a"
+          style="transition:stroke-dashoffset 1s ease 0.3s"/>
+        <!-- 30% Teoria - blue -->
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#4A90D9" stroke-width="28"
+          stroke-dasharray="502" stroke-dashoffset="502"
+          transform="rotate(54 100 100)" id="donut40b"
+          style="transition:stroke-dashoffset 1s ease 0.6s"/>
+        <!-- 20% Inglês - green -->
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#50C878" stroke-width="28"
+          stroke-dasharray="502" stroke-dashoffset="502"
+          transform="rotate(162 100 100)" id="donut40c"
+          style="transition:stroke-dashoffset 1s ease 0.9s"/>
+        <!-- 10% Comportamento - purple -->
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#9B59B6" stroke-width="28"
+          stroke-dasharray="502" stroke-dashoffset="502"
+          transform="rotate(234 100 100)" id="donut40d"
+          style="transition:stroke-dashoffset 1s ease 1.2s"/>
+        <text x="100" y="96" text-anchor="middle" fill="#fff" font-size="20" font-weight="bold">Cert.</text>
+        <circle cx="100" cy="114" r="8" fill="#8B9AB0" opacity="0.6"/>
+        <circle cx="100" cy="114" r="8" fill="#8B9AB0" opacity="0.6"/>
+      </svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;opacity:0;animation:slideLeft 0.6s 0.5s ease both">
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:14px;height:14px;border-radius:4px;background:#2DD4A8;flex-shrink:0"></div><span style="font-size:clamp(14px,1.8vw,18px)"><strong>40%</strong> Prática</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:14px;height:14px;border-radius:4px;background:#4A90D9;flex-shrink:0"></div><span style="font-size:clamp(14px,1.8vw,18px)"><strong>30%</strong> Teoria</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:14px;height:14px;border-radius:4px;background:#50C878;flex-shrink:0"></div><span style="font-size:clamp(14px,1.8vw,18px)"><strong>20%</strong> Inglês</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:14px;height:14px;border-radius:4px;background:#9B59B6;flex-shrink:0"></div><span style="font-size:clamp(14px,1.8vw,18px)"><strong>10%</strong> Comportamento</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 47 -->
+<div class="slide" id="slide-47">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Sistema de gamificação</div>
+  <div style="display:flex;gap:24px;width:100%;max-width:800px">
+    <div class="card card-glow" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.5s 0.3s ease both">
+      <div style="width:60px;height:60px;background:linear-gradient(135deg,var(--accent),var(--accent2));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;font-weight:900;color:#0F1419;line-height:60px">XP</div>
+      <div style="font-weight:800;font-size:clamp(16px,2vw,20px);color:var(--accent);margin-bottom:6px">XP</div>
+      <div style="font-size:clamp(12px,1.4vw,14px);color:var(--gray);margin-bottom:16px">Evolução técnica</div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:8px;height:8px;overflow:hidden"><div style="height:100%;width:72%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:8px"></div></div>
+    </div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.5s 0.6s ease both;border-color:rgba(240,192,64,0.3)">
+      <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#f0c040,#e0a020);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px"><i data-lucide="star" style="width:22px;height:22px"></i></div>
+      <div style="font-weight:800;font-size:clamp(16px,2vw,20px);color:#f0c040;margin-bottom:6px">REP</div>
+      <div style="font-size:clamp(12px,1.4vw,14px);color:var(--gray);margin-bottom:16px">Postura profissional</div>
+      <div style="color:#f0c040;font-size:20px">★ ★ ★ ★ ☆</div>
+    </div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.5s 0.9s ease both;border-color:rgba(192,192,192,0.2)">
+      <div style="width:60px;height:60px;background:linear-gradient(135deg,#c0c0c0,#909090);border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px"><i data-lucide="gem" style="width:22px;height:22px"></i></div>
+      <div style="font-weight:800;font-size:clamp(16px,2vw,20px);color:#c0c0c0;margin-bottom:6px">TOKEN</div>
+      <div style="font-size:clamp(12px,1.4vw,14px);color:var(--gray);margin-bottom:16px">Troque por vantagens</div>
+      <div style="font-size:clamp(12px,1.4vw,14px);color:#c0c0c0">+ bonificações</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 48 -->
+<div class="slide" id="slide-48">
+  <div class="section-title" style="margin-bottom:40px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Do portfólio ao estágio</div>
+  <div style="display:flex;align-items:center;gap:16px;width:100%;max-width:800px;margin-bottom:32px">
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:slideRight 0.5s 0.3s ease both">
+      <div style="font-size:32px;margin-bottom:10px"><i data-lucide="clock" style="width:32px;height:32px"></i></div>
+      <div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">1 evidência<br>por semana</div>
+    </div>
+    <div style="color:var(--accent);font-size:28px;opacity:0;animation:fadeIn 0.4s 0.6s ease both">→</div>
+    <div class="card" style="flex:1;text-align:center;opacity:0;animation:fadeUp 0.5s 0.7s ease both">
+      <div style="font-size:32px;margin-bottom:10px"><i data-lucide="file-text" style="width:32px;height:32px"></i></div>
+      <div style="font-weight:700;font-size:clamp(13px,1.5vw,16px)">Portfólio<br>completo</div>
+    </div>
+    <div style="color:var(--accent);font-size:28px;opacity:0;animation:fadeIn 0.4s 1s ease both">→</div>
+    <div class="card card-glow" style="flex:1;text-align:center;border-color:rgba(45,212,168,0.4);opacity:0;animation:slideLeft 0.5s 1.1s ease both">
+      <div style="font-size:32px;margin-bottom:10px"><i data-lucide="building-2" style="width:32px;height:32px"></i></div>
+      <div style="font-weight:700;font-size:clamp(13px,1.5vw,16px);color:var(--accent)">Estágio<br>remunerado</div>
+    </div>
+  </div>
+  <div class="card" style="width:100%;max-width:500px;opacity:0;animation:fadeUp 0.6s 1.4s ease both">
+    <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:12px;letter-spacing:0.08em">PORTFÓLIO — PROJETOS</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(45,212,168,0.05);border-radius:8px"><span style="font-size:13px">Agente de atendimento WhatsApp</span><span style="font-size:11px;color:var(--accent)">✓</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(45,212,168,0.05);border-radius:8px"><span style="font-size:13px">Automação de relatórios</span><span style="font-size:11px;color:var(--accent)">✓</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(45,212,168,0.05);border-radius:8px"><span style="font-size:13px">Pipeline de dados com IA</span><span style="font-size:11px;color:var(--accent)">✓</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 49 -->
+<div class="slide" id="slide-49">
+  <div style="text-align:center">
+    <div style="font-size:80px;animation:pulse 2s infinite;display:block;margin-bottom:20px"><i data-lucide="message-circle" style="width:80px;height:80px"></i></div>
+    <div style="font-size:clamp(28px,4.5vw,60px);font-weight:800;animation:fadeUp 0.7s 0.3s ease both;opacity:0">Suas dúvidas.<br><span class="teal">Nossas respostas.</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 50 -->
+<div class="slide" id="slide-50">
+  <div style="width:100%;max-width:640px">
+    <div class="card" style="border-color:rgba(139,154,176,0.15);margin-bottom:20px;opacity:0;animation:slideRight 0.6s 0.2s ease both">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0"><i data-lucide="help-circle" style="width:22px;height:22px"></i></div>
+        <div style="font-size:clamp(16px,2vw,22px);font-weight:600;color:var(--gray)">"Meu filho não sabe nada de tecnologia."</div>
+      </div>
+    </div>
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4);opacity:0;animation:slideLeft 0.6s 0.6s ease both">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0;color:var(--accent)">✓</div>
+        <div>
+          <div style="font-size:clamp(16px,2vw,22px);font-weight:700;color:var(--accent);margin-bottom:10px">Começa do zero. T1 é exatamente pra isso.</div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,16px);color:var(--gray)"><span style="font-size:20px"><i data-lucide="stairs" style="width:20px;height:20px"></i></span>Metodologia passo a passo, sem pré-requisitos.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 51 -->
+<div class="slide" id="slide-51">
+  <div style="width:100%;max-width:640px">
+    <div class="card" style="border-color:rgba(139,154,176,0.15);margin-bottom:20px;opacity:0;animation:slideRight 0.6s 0.2s ease both">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0"><i data-lucide="help-circle" style="width:22px;height:22px"></i></div>
+        <div style="font-size:clamp(16px,2vw,22px);font-weight:600;color:var(--gray)">"Mais um curso de internet?"</div>
+      </div>
+    </div>
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4);opacity:0;animation:slideLeft 0.6s 0.6s ease both">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="opacity:0;animation:fadeUp 0.4s 0.9s ease both;display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:700">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">12 meses de formação estruturada</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.1s ease both;display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:700">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Mentoria semanal ao vivo</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.3s ease both;display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:700">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Avaliação e relatório para os pais</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.5s ease both;display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:700">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Portfólio real</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.7s ease both;display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:700">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Estágio remunerado garantido</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 52 -->
+<div class="slide" id="slide-52">
+  <div style="width:100%;max-width:640px">
+    <div class="card" style="border-color:rgba(139,154,176,0.15);margin-bottom:24px;opacity:0;animation:slideRight 0.6s 0.2s ease both">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0"><i data-lucide="help-circle" style="width:22px;height:22px"></i></div>
+        <div style="font-size:clamp(16px,2vw,22px);font-weight:600;color:var(--gray)">"E se ele não se adaptar?"</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:20px;opacity:0;animation:fadeUp 0.6s 0.6s ease both">
+      <div style="flex:0.4;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="width:56px;height:56px;border-radius:50%;background:rgba(45,212,168,0.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px"><i data-lucide="user" style="width:28px;height:28px"></i></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="handshake" style="width:20px;height:20px"></i></span><span style="font-size:clamp(13px,1.5vw,16px)">Mentoria individual</span></div>
+        <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="gamepad-2" style="width:20px;height:20px"></i></span><span style="font-size:clamp(13px,1.5vw,16px)">Gamificação motivacional</span></div>
+        <div class="card" style="padding:14px 18px;display:flex;align-items:center;gap:12px"><span><i data-lucide="file-text" style="width:20px;height:20px"></i></span><span style="font-size:clamp(13px,1.5vw,16px)">Plano de recuperação personalizado</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 53 -->
+<div class="slide" id="slide-53">
+  <div class="section-title" style="margin-bottom:36px;opacity:0;animation:fadeUp 0.6s 0.1s ease both">Respostas rápidas</div>
+  <div style="display:flex;flex-direction:column;gap:16px;width:100%;max-width:640px">
+    <div class="card" style="display:flex;align-items:center;gap:16px;opacity:0;animation:slideRight 0.5s 0.3s ease both">
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);color:var(--gray)">"Precisa saber inglês?"</div>
+      <div style="font-size:28px;color:var(--accent)">→</div>
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);font-weight:700;color:var(--accent)">Incluso. 4 módulos.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:16px;opacity:0;animation:slideRight 0.5s 0.6s ease both">
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);color:var(--gray)">"Estágio garantido?"</div>
+      <div style="font-size:28px;color:var(--accent)">→</div>
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);font-weight:700;color:var(--accent)">Sim, para quem cumpre os critérios.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:16px;opacity:0;animation:slideRight 0.5s 0.9s ease both">
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);color:var(--gray)">"Primeira turma?"</div>
+      <div style="font-size:28px;color:var(--accent)">→</div>
+      <div style="flex:1;font-size:clamp(14px,1.8vw,18px);font-weight:700;color:var(--accent)">Menor = atenção máxima.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 54 -->
+<div class="slide" id="slide-54">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(45,212,168,0.12) 0%,transparent 60%);animation:radialGrow 1.2s 0.2s ease both;opacity:0"></div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div style="font-size:clamp(32px,5vw,72px);font-weight:900;animation:fadeUp 0.8s 0.4s ease both;opacity:0">Agora: como<br><span class="teal">começar.</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 55 -->
+<div class="slide" id="slide-55">
+  <div style="width:100%;max-width:520px">
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.4)">
+      <div style="text-align:center;margin-bottom:24px;opacity:0;animation:fadeUp 0.5s 0.1s ease both">
+        <div style="display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:clamp(18px,2.5vw,28px);font-weight:900">NEA — Formação Completa</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="opacity:0;animation:fadeUp 0.4s 0.3s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Formação IA — 12 meses</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 0.5s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Inglês profissional</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 0.7s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Mentoria semanal</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 0.9s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Relatório semanal para os pais</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.1s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Gamificação</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.3s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Portfólio profissional</span></div>
+        <div style="opacity:0;animation:fadeUp 0.4s 1.5s ease both;display:flex;align-items:center;gap:12px"><span style="color:var(--accent);font-weight:700;font-size:18px">✓</span><span style="font-size:clamp(14px,1.8vw,18px)">Estágio remunerado</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 56 -->
+<div class="slide" id="slide-56">
+  <div style="width:100%;max-width:520px">
+    <div class="card" id="price-card" style="border-color:rgba(45,212,168,0.4);text-align:center;transition:box-shadow 0.5s">
+      <div style="font-size:clamp(18px,2.5vw,24px);font-weight:900;margin-bottom:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">NEA — Formação Completa</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0;text-align:left;padding:0 8px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:clamp(13px,1.5vw,16px)"><span style="color:var(--accent)">✓</span> Formação IA — 12 meses</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:clamp(13px,1.5vw,16px)"><span style="color:var(--accent)">✓</span> Inglês + Mentoria + Relatório</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:clamp(13px,1.5vw,16px)"><span style="color:var(--accent)">✓</span> Portfólio + Estágio remunerado</div>
+      </div>
+      <div style="height:1px;background:rgba(45,212,168,0.2);margin:16px 0"></div>
+      <div id="price-reveal" style="opacity:0;animation:scaleIn 0.6s 0.3s ease both">
+        <div style="font-size:clamp(60px,10vw,100px);font-weight:900;color:var(--accent);line-height:1;letter-spacing:-0.03em">R$90</div>
+        <div style="font-size:clamp(18px,2.5vw,28px);font-weight:700;color:var(--accent)">/mês</div>
+        <div style="font-size:clamp(14px,1.8vw,18px);color:var(--gray);margin-top:8px">R$3 por dia — menos que um café</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 57 -->
+<div class="slide" id="slide-57">
+  <div style="display:flex;align-items:center;gap:40px;width:100%;max-width:900px">
+    <div style="flex:1;opacity:0;animation:slideRight 0.6s 0.3s ease both">
+      <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);font-weight:700;margin-bottom:16px;letter-spacing:0.05em">GASTOS COMUNS</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:12px 16px;filter:saturate(0.5)"><div style="display:flex;justify-content:space-between;align-items:center"><span><i data-lucide="coffee" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Café / dia</span><span style="color:var(--gray)">~R$10</span></div></div>
+        <div class="card" style="padding:12px 16px;filter:saturate(0.5)"><div style="display:flex;justify-content:space-between;align-items:center"><span><i data-lucide="utensils" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Lanche</span><span style="color:var(--gray)">~R$20</span></div></div>
+        <div class="card" style="padding:12px 16px;filter:saturate(0.5)"><div style="display:flex;justify-content:space-between;align-items:center"><span><i data-lucide="dumbbell" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Academia</span><span style="color:var(--gray)">~R$120/mês</span></div></div>
+        <div class="card" style="padding:12px 16px;filter:saturate(0.5)"><div style="display:flex;justify-content:space-between;align-items:center"><span><i data-lucide="map-pin" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i> Cursinho inglês</span><span style="color:var(--gray)">~R$250/mês</span></div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;animation:fadeIn 0.5s 0.8s ease both">
+      <div style="font-size:28px;color:var(--gray)">vs</div>
+    </div>
+    <div style="flex:1;opacity:0;animation:slideLeft 0.6s 0.5s ease both">
+      <div style="font-size:clamp(13px,1.5vw,16px);color:var(--accent);font-weight:700;margin-bottom:16px;letter-spacing:0.05em">INVESTIMENTO</div>
+      <div class="card card-glow" style="border-color:rgba(45,212,168,0.5);background:rgba(45,212,168,0.06);text-align:center;padding:28px">
+        <div style="width:48px;height:48px;background:var(--accent);border-radius:12px;font-weight:900;color:#0F1419;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">NEA</div>
+        <div style="font-size:clamp(28px,4vw,48px);font-weight:900;color:var(--accent)">R$90/mês</div>
+        <div style="font-size:clamp(12px,1.4vw,15px);color:var(--gray);margin-top:8px">Profissão + Inglês + Estágio</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 58 -->
+<div class="slide" id="slide-58">
+  <div style="width:100%;max-width:520px">
+    <div class="card card-glow" style="border-color:rgba(45,212,168,0.5);text-align:center;padding:40px 36px">
+      <div style="display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0F1419;font-size:12px;font-weight:800;padding:6px 16px;border-radius:50px;letter-spacing:0.08em;margin-bottom:24px;opacity:0;animation:scaleIn 0.5s 0.2s ease both">TURMA INAUGURAL</div>
+      <div style="margin-bottom:24px;opacity:0;animation:fadeUp 0.5s 0.5s ease both">
+        <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);margin-bottom:10px">Vagas disponíveis</div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:10px;height:16px;overflow:hidden;margin-bottom:8px">
+          <div style="height:100%;width:53%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:10px"></div>
+        </div>
+        <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray)"><span style="color:var(--accent);font-weight:700">8 de 15 vagas</span> preenchidas</div>
+      </div>
+      <!-- Botão removido -->
+      <div style="font-size:clamp(12px,1.4vw,14px);color:var(--gray);margin-top:16px;opacity:0;animation:fadeUp 0.5s 1.1s ease both">Turma inaugural — vagas limitadas</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 59 -->
+<div class="slide" id="slide-59" style="padding:0">
+  <div style="display:flex;width:100%;height:100%">
+    <!-- LEFT -->
+    <div style="flex:1;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;border-right:1px solid rgba(45,212,168,0.15)">
+      <div style="font-size:clamp(14px,1.8vw,18px);color:var(--gray);font-weight:600;margin-bottom:28px;text-align:center">Daqui a 1 ano — <span style="color:rgba(139,154,176,0.5)">sem agir</span></div>
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid rgba(139,154,176,0.15);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:28px"><i data-lucide="user" style="width:40px;height:40px"></i></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px);color:rgba(139,154,176,0.5)"><span style="color:#e05555">✗</span>Sem profissão em IA</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px);color:rgba(139,154,176,0.5)"><span style="color:#e05555">✗</span>Sem inglês</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px);color:rgba(139,154,176,0.5)"><span style="color:#e05555">✗</span>Sem portfólio</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px);color:rgba(139,154,176,0.5)"><span style="color:#e05555">✗</span>Sem estágio</div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div style="flex:1;background:rgba(45,212,168,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;opacity:0;animation:fadeIn 0.8s 0.8s ease both">
+      <div style="font-size:clamp(14px,1.8vw,18px);color:var(--accent);font-weight:700;margin-bottom:28px;text-align:center">Daqui a 1 ano — <span style="color:var(--accent)">com NEA</span></div>
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(45,212,168,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:28px;box-shadow:0 0 30px rgba(45,212,168,0.3)"><i data-lucide="laptop" style="width:40px;height:40px"></i></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px)"><span style="color:var(--accent);font-weight:700">✓</span>Profissão em IA</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px)"><span style="color:var(--accent);font-weight:700">✓</span>Inglês profissional</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px)"><span style="color:var(--accent);font-weight:700">✓</span>Portfólio real</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.5vw,17px)"><span style="color:var(--accent);font-weight:700">✓</span>Estágio remunerado</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 60 -->
+<div class="slide" id="slide-60" style="background:#000">
+  <div style="text-align:center">
+    <div style="font-size:clamp(28px,5vw,72px);font-weight:800;opacity:0;animation:fadeUp 0.8s 0.4s ease both">A decisão é sua.</div>
+    <div style="font-size:clamp(28px,5vw,72px);font-weight:800;opacity:0;animation:fadeUp 0.8s 1.2s ease both;margin-top:12px">Mas o futuro é <span class="teal">dele</span>.</div>
+  </div>
+</div>
+
+<!-- ============================================================ SLIDE 61 -->
+<div class="slide" id="slide-61">
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:28px;text-align:center">
+    <div style="display:flex;align-items:center;gap:12px;opacity:0;animation:fadeUp 0.6s 0.2s ease both">
+      <div style="width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#0F1419">NEA</div>
+      <div style="font-size:clamp(16px,2vw,22px);font-weight:700">Núcleo de Engenharia de Agentes</div>
+    </div>
+    <div style="display:flex;gap:24px;opacity:0;animation:fadeUp 0.6s 0.5s ease both">
+      <div style="text-align:center"><div style="font-size:36px"><i data-lucide="bot" style="width:36px;height:36px"></i></div><div style="font-size:13px;color:var(--gray);margin-top:6px">IA</div></div>
+      <div style="text-align:center"><div style="font-size:36px"><i data-lucide="globe" style="width:36px;height:36px"></i></div><div style="font-size:13px;color:var(--gray);margin-top:6px">Inglês</div></div>
+      <div style="text-align:center"><div style="font-size:36px"><i data-lucide="handshake" style="width:36px;height:36px"></i></div><div style="font-size:13px;color:var(--gray);margin-top:6px">Mentoria</div></div>
+      <div style="text-align:center"><div style="font-size:36px"><i data-lucide="banknote" style="width:36px;height:36px"></i></div><div style="font-size:13px;color:var(--gray);margin-top:6px">Estágio</div></div>
+    </div>
+    <div style="font-size:clamp(48px,8vw,100px);font-weight:900;color:var(--accent);line-height:1;opacity:0;animation:fadeUp 0.6s 0.8s ease both">R$90<span style="font-size:0.4em;color:var(--gray)">/mês</span></div>
+    <!-- Botão removido -->
+    <div style="font-size:clamp(13px,1.5vw,16px);color:var(--gray);opacity:0;animation:fadeUp 0.6s 1.4s ease both">Turma inaugural — vagas limitadas</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CORE STATE
+// ============================================================
+let current = 1;
+const TOTAL = 61;
+
+// ============================================================
+// PARTICLE SYSTEM
+// ============================================================
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let animId;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function createParticles() {
+  particles = [];
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2.5 + 1
+    });
+  }
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const CONN = 140;
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(45,212,168,0.7)';
+    ctx.fill();
+    for (let j = i + 1; j < particles.length; j++) {
+      const q = particles[j];
+      const dx = p.x - q.x, dy = p.y - q.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < CONN) {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(q.x, q.y);
+        ctx.strokeStyle = `rgba(45,212,168,${0.15*(1-dist/CONN)})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }
+  animId = requestAnimationFrame(drawParticles);
+}
+
+function startParticles() {
+  resizeCanvas();
+  createParticles();
+  cancelAnimationFrame(animId);
+  drawParticles();
+  canvas.classList.add('visible');
+}
+
+function stopParticles() {
+  cancelAnimationFrame(animId);
+  canvas.classList.remove('visible');
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  createParticles();
+});
+
+// ============================================================
+// COUNTER ANIMATION
+// ============================================================
+function animateCounter(el, target, suffix, duration) {
+  let start = 0;
+  const step = target / (duration / 16);
+  const t = setInterval(() => {
+    start = Math.min(start + step, target);
+    el.textContent = (target > 0 ? '+' : '') + Math.round(start) + suffix;
+    if (start >= target) clearInterval(t);
+  }, 16);
+}
+
+// ============================================================
+// BAR ANIMATIONS
+// ============================================================
+function animateBar(el, targetPct, delay) {
+  setTimeout(() => {
+    el.style.transition = 'width 1.2s ease';
+    el.style.width = targetPct;
+  }, delay || 300);
+}
+
+function animateVBar(el, targetH, delay) {
+  setTimeout(() => {
+    el.style.transition = 'height 1s ease';
+    el.style.height = targetH;
+  }, delay || 300);
+}
+
+// ============================================================
+// DONUT ANIMATION
+// ============================================================
+function animateDonut(el, pct, circumference, delay) {
+  setTimeout(() => {
+    const offset = circumference - (circumference * pct);
+    el.style.strokeDashoffset = offset;
+  }, delay || 300);
+}
+
+// ============================================================
+// SLIDE SETUP — called when slide becomes active
+// ============================================================
+function onSlideEnter(n) {
+  if (n === 1 || n === 61) {
+    startParticles();
+  } else {
+    stopParticles();
+  }
+
+  // Counter slide 6
+  if (n === 6) {
+    const el = document.getElementById('counter-6');
+    if (el) animateCounter(el, 170, ' mi', 1500);
+  }
+
+  // Bars slide 7
+  if (n === 7) {
+    const a = document.getElementById('bar7a');
+    const b = document.getElementById('bar7b');
+    const s = document.getElementById('s7saldo');
+    const sb = document.getElementById('s7sub');
+    if (a) animateBar(a, '80%', 400);
+    if (b) animateBar(b, '46%', 700);
+    if (s) { setTimeout(() => { s.style.opacity = '1'; s.style.transition = 'opacity 0.6s'; }, 1200); }
+    if (sb) { setTimeout(() => { sb.style.opacity = '1'; sb.style.transition = 'opacity 0.6s'; }, 1500); }
+  }
+
+  // Counter slide 9
+  if (n === 9) {
+    const el = document.getElementById('counter-9');
+    if (el) animateCounter(el, 306, '%', 1500);
+  }
+
+  // Vertical bars slide 11
+  if (n === 11) {
+    animateVBar(document.getElementById('bar11a'), '100px', 400);
+    animateVBar(document.getElementById('bar11b'), '180px', 700);
+  }
+
+  // Donut slide 13
+  if (n === 13) {
+    const d = document.getElementById('donut13');
+    if (d) { setTimeout(() => { d.style.strokeDashoffset = Math.round(502 * (1 - 0.71)); }, 400); }
+  }
+
+  // Donut slide 40
+  if (n === 46) {
+    const circ = 502;
+    setTimeout(() => {
+      const a = document.getElementById('donut40a');
+      const b = document.getElementById('donut40b');
+      const c = document.getElementById('donut40c');
+      const d = document.getElementById('donut40d');
+      if (a) a.style.strokeDashoffset = Math.round(circ * (1 - 0.40));
+      if (b) b.style.strokeDashoffset = Math.round(circ * (1 - 0.30));
+      if (c) c.style.strokeDashoffset = Math.round(circ * (1 - 0.20));
+      if (d) d.style.strokeDashoffset = Math.round(circ * (1 - 0.10));
+    }, 300);
+  }
+
+  // Bar slide 36
+  if (n === 42) {
+    animateBar(document.getElementById('bar36'), '90%', 400);
+    animateBar(document.getElementById('bar36b'), '10%', 700);
+  }
+
+  // Timeline line slide 30
+  if (n === 36) {
+    const tl = document.getElementById('timeline-line');
+    if (tl) { setTimeout(() => { tl.style.transition = 'width 1.5s ease'; tl.style.width = '100%'; }, 400); }
+  }
+
+  // Price card glow slide 50
+  if (n === 56) {
+    setTimeout(() => {
+      const pc = document.getElementById('price-card');
+      if (pc) pc.style.boxShadow = '0 0 60px rgba(45,212,168,0.4)';
+    }, 600);
+  }
+}
+
+// ============================================================
+// SLIDE NAVIGATION
+// ============================================================
+function showSlide(n) {
+  const prev = document.getElementById('slide-' + current);
+  const next = document.getElementById('slide-' + n);
+  if (!next) return;
+
+  // Remove active + reset animations by cloning
+  if (prev) prev.classList.remove('active');
+
+  // Reflow trick to restart animations
+  next.classList.add('active');
+  // Force animation restart on animated children
+  next.querySelectorAll('[style*="animation"]').forEach(el => {
+    const s = el.style.animation;
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = s;
+  });
+
+  // Reset bars
+  if (n === 7) {
+    const a = document.getElementById('bar7a');
+    const b = document.getElementById('bar7b');
+    if (a) { a.style.transition = 'none'; a.style.width = '0'; }
+    if (b) { b.style.transition = 'none'; b.style.width = '0'; }
+    document.getElementById('s7saldo').style.opacity = '0';
+    document.getElementById('s7sub').style.opacity = '0';
+  }
+  if (n === 11) {
+    const a = document.getElementById('bar11a'); const b = document.getElementById('bar11b');
+    if (a) { a.style.transition = 'none'; a.style.height = '0'; }
+    if (b) { b.style.transition = 'none'; b.style.height = '0'; }
+  }
+  if (n === 42) {
+    const a = document.getElementById('bar36'); const b = document.getElementById('bar36b');
+    if (a) { a.style.transition = 'none'; a.style.width = '0'; }
+    if (b) { b.style.transition = 'none'; b.style.width = '0'; }
+  }
+  if (n === 36) {
+    const tl = document.getElementById('timeline-line');
+    if (tl) { tl.style.transition = 'none'; tl.style.width = '0'; }
+  }
+  if (n === 13) {
+    const d = document.getElementById('donut13');
+    if (d) { d.style.transition = 'none'; d.style.strokeDashoffset = '502'; }
+  }
+  if (n === 46) {
+    ['donut40a','donut40b','donut40c','donut40d'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.transition = 'none'; el.style.strokeDashoffset = '502'; }
+    });
+  }
+
+  current = n;
+  updateUI();
+  onSlideEnter(n);
+}
+
+function changeSlide(dir) {
+  const next = Math.max(1, Math.min(TOTAL, current + dir));
+  if (next !== current) showSlide(next);
+}
+
+function updateUI() {
+  document.getElementById('progress-bar').style.width = ((current / TOTAL) * 100) + '%';
+  document.getElementById('slide-counter').textContent = current + ' / ' + TOTAL;
+}
+
+// ============================================================
+// KEYBOARD
+// ============================================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); changeSlide(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+lucide.createIcons();
+showSlide(1);
+</script>
+</body>
+</html>
